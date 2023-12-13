@@ -58,7 +58,7 @@ public class DefaultProcessorImpl<T> implements IProcessor<T> {
 
     @Override
     public List<T> findAll() throws Exception {
-        return (List<T>) query.select(clazz);
+        return (List<T>) query.select(mapper.getMapper(clazz).getTableName(),clazz);
     }
 
 

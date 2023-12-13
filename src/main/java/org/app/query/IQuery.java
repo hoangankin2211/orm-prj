@@ -9,7 +9,9 @@ public interface IQuery {
 
     void changeDataSourceConnection(Connection connection);
 
-    <T> List<?> select(Class<T> clazz) throws Exception;
+
+    <T> List<T> select(String tableName,Class<T> clazz) throws Exception;
+
     <T> boolean create(EntityMetaData entityMetaData) throws Exception;
 
 

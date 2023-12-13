@@ -1,7 +1,8 @@
 package org.app.query.impl;
 
-import org.app.datasource.DataSourceManager;
 import org.app.enums.OperationType;
+import org.app.mapper.ObjectMapperManager;
+import org.app.mapper.adapter.EntityObjectAdapter;
 import org.app.mapper.metadata.ColumnMetaData;
 import org.app.mapper.metadata.EntityMetaData;
 import org.app.query.IQuery;
@@ -28,8 +29,37 @@ public class DefaultQueryImpl implements IQuery {
     }
 
     @Override
-    public <T> List<T> select(Class<T> clazz) {
+    public <T> List<T> select(String tableName,Class<T> clazz){
+        String statement = "select * from " + tableName + ";";
+        try {
+            final ResultSet resultSet = connection.prepareStatement(statement).executeQuery();
+            return handleResultSet(resultSet,clazz);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
         return  new ArrayList<>();
+    }
+
+    private <T> List<T> handleResultSet(ResultSet resultSet,Class<T> clazz) {
+        try {
+            final List<T> list = new ArrayList<>();
+            while (resultSet.next()) {
+                final T obj = clazz.newInstance();
+                final EntityMetaData entityMetaData = ObjectMapperManager.getInstance().getMapper(clazz);
+                final List<ColumnMetaData> columnMetaData = entityMetaData.getColumnMetaDataMap();
+                for (int i = 0; i < columnMetaData.size(); i++) {
+
+                    final ColumnMetaData column = columnMetaData.get(i);
+                    var object = resultSet.getObject(i + 1);
+                    column.getField().set(obj, object);
+
+                }
+                list.add(obj);
+            }
+            return list;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public DefaultQueryImpl() {
@@ -48,7 +78,7 @@ public class DefaultQueryImpl implements IQuery {
     @Override
     public <T> int insert(EntityMetaData entityMetaData,List<Object> params) throws Exception {
 
-        return  executeSql(createSqlStatement(OperationType.INSERT, entityMetaData),params);
+        return executeSql(createSqlStatement(OperationType.INSERT, entityMetaData),params);
     }
 
     @Override
@@ -73,7 +103,6 @@ public class DefaultQueryImpl implements IQuery {
     }
 
     private  int executeSql(String statement,List<Object> params) throws SQLException {
-        System.out.println(params);
         final PreparedStatement preparedStatement = connection.prepareStatement(statement);
         for (int i = 0;i<params.size();i++){
             preparedStatement.setObject(i+1,params.get(i));
@@ -113,7 +142,7 @@ public class DefaultQueryImpl implements IQuery {
         StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append(columnMetaData.getColumnName());
         sqlBuilder.append(" ");
-        sqlBuilder.append(sqlUtils.getSqlType(columnMetaData.getType().getClass()));
+        sqlBuilder.append(sqlUtils.getSqlType(columnMetaData.getType()));
         if (columnMetaData.isPrimaryKey()) {
             sqlBuilder.append(" PRIMARY KEY");
         }
@@ -122,13 +151,17 @@ public class DefaultQueryImpl implements IQuery {
 
     private String createTableStatement(String tbName,List<ColumnMetaData> columnMetaData) {
 
-        return "create table if not exists " +
+        String statement =  "create table if not exists " +
                 tbName +
                 columnMetaData
                         .stream()
                         .map(this::handleCreateSql)
                         .collect(Collectors.joining(",", "(", ")")) +
                 ";" + System.lineSeparator();
+
+        System.out.println(statement);
+
+        return statement;
     }
 
 
