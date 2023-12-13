@@ -6,8 +6,9 @@ import org.app.mapper.metadata.ColumnMetaData;
 
 import java.util.Map;
 
-@AllArgsConstructor
+
 @Getter
+@AllArgsConstructor
 public class EntityMetadata {
     protected String tableName;
     protected Map<String, ColumnMetaData> columnMetaDataMap;
