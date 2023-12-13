@@ -1,13 +1,12 @@
 package org.app.processor.impl;
 
 import org.app.enums.OperationType;
-import org.app.mapper.impl.ClassAdapter;
-import org.app.mapper.impl.EntityMapper;
+import org.app.mapper.adapter.EntityObjectAdapter;
 import org.app.mapper.metadata.ColumnMetaData;
+import org.app.mapper.metadata.EntityMetadata;
 import org.app.processor.IProcessor;
 import org.app.utils.SqlUtils;
 
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -23,14 +22,14 @@ public  class BaseProcessorImpl implements IProcessor {
 
     private final SqlUtils sqlUtils = SqlUtils.getInstances();
 
-    private final Map<Class<?>, EntityMapper> mappers = new ConcurrentHashMap<>();
+    private final Map<Class<?>, EntityMetadata> mappers = new ConcurrentHashMap<>();
 
     public BaseProcessorImpl(Connection connection) {
         this.connection = connection;
     }
 
     @Override
-    public <T> List<T> select(Class<T> clazz) throws Exception {
+    public <T> List<T> select(Class<T> clazz) {
         return null;
     }
 
@@ -69,11 +68,11 @@ public  class BaseProcessorImpl implements IProcessor {
         preparedStatement.execute();
     }
 
-    protected EntityMapper getMapper(Class<?> clazz) {
-        EntityMapper mapper = mappers.get(clazz);
+    protected EntityMetadata getMapper(Class<?> clazz) {
+        EntityMetadata mapper = mappers.get(clazz);
 
         if (mapper == null) {
-            mapper = new ClassAdapter(clazz);
+            mapper = new EntityObjectAdapter(clazz);
             mappers.put(clazz, mapper);
         }
 
@@ -88,7 +87,7 @@ public  class BaseProcessorImpl implements IProcessor {
             throw new SQLException("Error: object is null");
         }
 
-        EntityMapper mapper = getMapper(object.getClass());
+        EntityMetadata mapper = getMapper(object.getClass());
         List<ColumnMetaData> columnMetaData = mapper.getColumnMetaDataMap().values().stream().toList();
 
         if (handleType == OperationType.INSERT) {
