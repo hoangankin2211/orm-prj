@@ -2,5 +2,11 @@ package org.app.datasource.builder.impl;
 
 import org.app.datasource.builder.IDataSourceBuilder;
 
-public class MSSqlBuilder  {
+import javax.sql.DataSource;
+
+public class MSSqlBuilder implements IDataSourceBuilder {
+    @Override
+    public DataSource buildDataSource() {
+        return null;
+    }
 }

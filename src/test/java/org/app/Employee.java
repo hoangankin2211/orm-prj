@@ -2,6 +2,7 @@ package org.app;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.app.annotations.Column;
 import org.app.annotations.Entity;
@@ -13,7 +14,6 @@ import java.sql.Date;
 @Setter
 @Getter
 @Entity(name = "tb_employee")
-@AllArgsConstructor
 public class Employee {
     @Id("ep_id")
     public long id;
@@ -23,4 +23,10 @@ public class Employee {
     public Date createOn;
     @Column("name_id")
     public String nameId;
+
+    public Employee(String name, Date createOn, String nameId) {
+        this.name = name;
+        this.createOn = createOn;
+        this.nameId = nameId;
+    }
 }

@@ -2,15 +2,17 @@ package org.app.mapper.metadata;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.app.mapper.metadata.ColumnMetaData;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.util.List;
 import java.util.Map;
-
 
 @Getter
 @AllArgsConstructor
-public class EntityMetadata {
+@NoArgsConstructor
+public class EntityMetaData {
     protected String tableName;
-    protected Map<String, ColumnMetaData> columnMetaDataMap;
+    protected List<ColumnMetaData> columnMetaDataMap;
     protected Class<?> clazz;
 }
