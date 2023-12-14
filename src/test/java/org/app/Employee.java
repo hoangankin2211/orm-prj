@@ -10,15 +10,19 @@ import java.sql.Date;
 
 @Setter
 @Getter
+@AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "tb_employee")
 public class Employee {
-    @Id("ep_id")
+    @Id(value = "ep_id",autoGenerate = false)
     public long id;
+
     @Column("ep_name")
     public String name;
+
     @Column("ep_createOn")
     public String createOn;
+
     @Column("name_id")
     public String nameId;
 

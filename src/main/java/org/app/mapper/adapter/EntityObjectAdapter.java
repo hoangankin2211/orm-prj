@@ -26,7 +26,6 @@ public class EntityObjectAdapter extends EntityMetaData {
 
         Field[] fields = clazz.getDeclaredFields();
 
-
 //        Map<String, Method> methodMap = Arrays.stream(clazz.getMethods())
 //                .collect(Collectors
 //                        .toMap(m -> m.getName()
@@ -40,13 +39,18 @@ public class EntityObjectAdapter extends EntityMetaData {
             ColumnMetaData columnMetaData = new FieldAdapter(f);
             if (columnMetaData.isPrimaryKey()){
                 isExistPrimaryKeyAnnotation = true;
+                columnMetaDataMap.add(0,columnMetaData);
             }
-            columnMetaDataMap.add(columnMetaData);
+            else {
+                columnMetaDataMap.add(columnMetaData);
+            }
         }
 
         if (!isExistPrimaryKeyAnnotation){
             throw new RuntimeException("Error: primary key not found");
         }
+
+
 
         this.columnMetaDataMap = columnMetaDataMap;
 

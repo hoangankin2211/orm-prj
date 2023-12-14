@@ -22,7 +22,20 @@ public class FieldAdapter extends ColumnMetaData {
         }
 
         if (field.isAnnotationPresent(Id.class)){
+            boolean isAutoGenerate = field.getAnnotation(Id.class).autoGenerate();
+
+            if (isAutoGenerate  ){
+                if (field.getType() != long.class && field.getType() != Long.class && field.getType() != int.class && field.getType() != Integer.class) {
+                    throw new RuntimeException("Error: primary key must be int or long type");
+                }
+                this.autoIncrement = true;
+            }
+
             isPrimaryKey = true;
+            String name = field.getAnnotation(Id.class).value();
+            if (!name.isEmpty()){
+                columnName = name;
+            }
         }
 
         this.isPrimaryKey = isPrimaryKey;

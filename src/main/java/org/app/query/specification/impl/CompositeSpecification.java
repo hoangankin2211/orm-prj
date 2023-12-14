@@ -1,4 +1,4 @@
-package org.app.query.specification.composite;
+package org.app.query.specification.impl;
 
 import org.app.query.specification.ISpecification;
 

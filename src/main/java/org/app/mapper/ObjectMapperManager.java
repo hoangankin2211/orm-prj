@@ -20,7 +20,6 @@ public class ObjectMapperManager {
     public static ObjectMapperManager getInstance() {
         return InstanceHolder.instance;
     }
-
     public EntityMetaData getMapper(Class<?> clazz) {
         EntityMetaData mapper = mappers.get(clazz);
 

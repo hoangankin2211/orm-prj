@@ -1,10 +1,12 @@
 package org.app.query.impl;
 
-import org.app.enums.OperationType;
+import lombok.ToString;
 import org.app.mapper.ObjectMapperManager;
 import org.app.mapper.metadata.ColumnMetaData;
 import org.app.mapper.metadata.EntityMetaData;
 import org.app.query.IQueryExecutor;
+import org.app.query.specification.ISpecification;
+import org.app.query.specification.impl.SpecificationClause;
 import org.app.utils.SqlUtils;
 
 import java.sql.Connection;
@@ -12,62 +14,108 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DefaultQueryExecutorImpl implements IQueryExecutor {
     private Connection connection;
 
     private final SqlUtils sqlUtils = SqlUtils.getInstances();
 
-
     @Override
     public void changeDataSourceConnection(Connection connection) {
         this.connection = connection;
     }
 
+    private PreparedStatement preparedStatement(String statement) throws SQLException {
+        return connection.prepareStatement(statement);
+    }
+
     @Override
     public <T> List<T> select(String tableName,Class<T> clazz){
-        String statement = "select * from " + tableName + ";";
+        try {
+            String statement = QueryBuilder.builder()
+                    .selectAll()
+                    .from(tableName)
+                    .build();
+
+            final ResultSet resultSet = preparedStatement(statement).executeQuery();
+            return sqlUtils.handleResultSet(resultSet,clazz);
+        } catch (SQLException throwable) {
+            throwable.printStackTrace();
+        }
+        return  new ArrayList<>();
+    }
+
+    @Override
+    public <T> List<T> selectBy(String tableName, ColumnMetaData[] column, Object[] params, Class<T> clazz) throws Exception{
+        if (params.length != column.length){
+            throw new RuntimeException("Error: params length not equal column length");
+        }
+        final SpecificationClause<T> specificationClause = new SpecificationClause<>();
+        for (int i = 0 ;i< column.length;i++) {
+            specificationClause.addSpecification(new SearchByIdSpecification<>(column[i], params[i]));
+        }
+
+        final String statement = QueryBuilder.builder()
+                .select(new SelectClause("*"))
+                .from(tableName)
+                .where(specificationClause)
+                .build();
+
+        System.out.println(statement);
+
+        final ResultSet resultSet = preparedStatement(statement).executeQuery();
+        return sqlUtils.handleResultSet(resultSet,clazz);
+    }
+
+    private static final class SearchByIdSpecification<T> implements ISpecification<T> {
+        private final ColumnMetaData columnMetaData;
+        private final Object id;
+
+        public SearchByIdSpecification(ColumnMetaData columnMetaData, Object id) {
+            this.columnMetaData = columnMetaData;
+            this.id = id;
+        }
+
+        @Override
+        public String toString() {
+            return columnMetaData.getColumnName() + " = " + id.toString();
+        }
+
+        @Override
+        public boolean isSatisfiedBy(T entity) {
+            try {
+                return columnMetaData.getField().get(entity).equals(id);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public <T> List<T> select(String tableName,List<ColumnMetaData> columns,Class<T> clazz){
+        String statement = QueryBuilder.builder()
+                .select(
+                        new SelectClause((String[])columns.stream().map(ColumnMetaData::getColumnName).toArray())
+                )
+                .from(tableName)
+                .build();
+
         try {
             final ResultSet resultSet = connection.prepareStatement(statement).executeQuery();
-            return handleResultSet(resultSet,clazz);
+            return sqlUtils.handleResultSet(resultSet,clazz);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
         return  new ArrayList<>();
     }
 
-    private <T> List<T> handleResultSet(ResultSet resultSet,Class<T> clazz) {
-        try {
-            final List<T> list = new ArrayList<>();
-            while (resultSet.next()) {
-                final T obj = clazz.newInstance();
-                final EntityMetaData entityMetaData = ObjectMapperManager.getInstance().getMapper(clazz);
-                final List<ColumnMetaData> columnMetaData = entityMetaData.getColumnMetaDataMap();
-                for (int i = 0; i < columnMetaData.size(); i++) {
-
-                    final ColumnMetaData column = columnMetaData.get(i);
-                    var object = resultSet.getObject(i + 1);
-                    column.getField().set(obj, object);
-
-                }
-                list.add(obj);
-            }
-            return list;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public DefaultQueryExecutorImpl() {
-    }
-
     @Override
     public <T> boolean create(EntityMetaData entityMetaData) {
        try {
-           final String statement = createSqlStatement(OperationType.CREATE,entityMetaData);
+           final String statement = QueryBuilder.builder()
+                   .create(entityMetaData.getTableName(), entityMetaData.getColumnMetaDataMap())
+                   .build();
            return executeSql(statement);
        }catch (Exception e){
            throw new RuntimeException(e);
@@ -76,22 +124,46 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
 
     @Override
     public <T> int insert(EntityMetaData entityMetaData,List<Object> params) throws Exception {
-
-        return executeSql(createSqlStatement(OperationType.INSERT, entityMetaData),params);
+        return executeSql(
+                QueryBuilder.builder()
+                    .insert(entityMetaData.getTableName(),entityMetaData.getColumnMetaDataMap()).build(),
+                params
+        );
     }
 
     @Override
-    public <T> int update(T obj) throws Exception {
-        return 0;
+    public <T> int update(EntityMetaData entityMetaData, List<Object> params) throws Exception {
+        SpecificationClause<T> searchSpecification = new SpecificationClause<>();
+        searchSpecification.addSpecification(new SearchByIdSpecification<>(entityMetaData.getColumnMetaDataMap().get(0),params.get(0)));
+        return executeSql(
+                QueryBuilder.builder()
+                        .update(entityMetaData.getTableName(),entityMetaData.getColumnMetaDataMap())
+                        .where(searchSpecification)
+                        .build(),
+                params.subList(1,params.size())
+        );
     }
 
     @Override
-    public <T> int delete(T obj) throws Exception {
-        return 0;
+    public <T> boolean delete(EntityMetaData entityMetaData, Object id) throws SQLException {
+        SpecificationClause<T> searchSpecification = new SpecificationClause<>();
+        searchSpecification.addSpecification(new SearchByIdSpecification<>(entityMetaData.getColumnMetaDataMap().get(0),id));
+        return executeSql(
+                QueryBuilder.builder()
+                        .delete(entityMetaData.getTableName())
+                        .where(searchSpecification)
+                        .build()
+        );
     }
 
+    @Override
     public long count(final String tbName) throws SQLException {
-        final ResultSet resultSet = connection.prepareStatement(countNumRow(tbName)).executeQuery();
+        final ResultSet resultSet = preparedStatement(
+                QueryBuilder.builder()
+                        .select(new SelectClause("COUNT(*) "))
+                        .from(tbName)
+                        .build()
+        ).executeQuery();
         resultSet.next();
         return resultSet.getInt(1);
     }
@@ -102,86 +174,10 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     }
 
     private  int executeSql(String statement,List<Object> params) throws SQLException {
-        final PreparedStatement preparedStatement = connection.prepareStatement(statement);
+        final PreparedStatement preparedStatement = preparedStatement(statement);
         for (int i = 0;i<params.size();i++){
             preparedStatement.setObject(i+1,params.get(i));
         }
        return preparedStatement.executeUpdate();
     }
-
-
-
-    protected String createSqlStatement(OperationType handleType, EntityMetaData entityMetaData) throws SQLException {
-        if (handleType == OperationType.SELECT) {
-            select(entityMetaData.getTableName(),entityMetaData.getClazz());
-        }
-
-        if (entityMetaData == null) {
-            throw new SQLException("Error: object is null");
-        }
-
-
-        List<ColumnMetaData> columnMetaData = entityMetaData.getColumnMetaDataMap();
-
-        if (handleType == OperationType.INSERT) {
-            return insertSql(entityMetaData.getTableName(),columnMetaData);
-        } else if (handleType == OperationType.DELETE) {
-            return "";
-        } else if (handleType == OperationType.UPDATE){
-            return "";
-        }
-        else if (handleType == OperationType.CREATE) {
-            return createTableStatement(entityMetaData.getTableName(), columnMetaData);
-        }
-
-        throw new SQLException("Error: handleType is null");
-    }
-
-    private String handleCreateSql( ColumnMetaData columnMetaData) {
-        StringBuilder sqlBuilder = new StringBuilder();
-        sqlBuilder.append(columnMetaData.getColumnName());
-        sqlBuilder.append(" ");
-        sqlBuilder.append(sqlUtils.getSqlType(columnMetaData.getType()));
-        if (columnMetaData.isPrimaryKey()) {
-            sqlBuilder.append(" PRIMARY KEY");
-        }
-        return sqlBuilder.toString();
-    }
-
-    private String createTableStatement(String tbName,List<ColumnMetaData> columnMetaData) {
-
-        String statement =  "create table if not exists " +
-                tbName +
-                columnMetaData
-                        .stream()
-                        .map(this::handleCreateSql)
-                        .collect(Collectors.joining(",", "(", ")")) +
-                ";" + System.lineSeparator();
-
-        System.out.println(statement);
-
-        return statement;
-    }
-
-
-    private String insertSql(final String tbName, List<ColumnMetaData> columnMetaData) {
-        if (columnMetaData.isEmpty()){
-            throw new RuntimeException("Error: columnMetaData is empty");
-        }
-
-        return "insert into " + tbName +
-                columnMetaData.stream()
-                        .map(ColumnMetaData::getColumnName)
-                        .collect(Collectors.joining(",", "(", ")")) +
-                " values " +
-                Collections.nCopies(columnMetaData.size()  , "?").stream().collect(Collectors.joining(",", "(", ")")) +
-                ";" + System.lineSeparator();
-    }
-
-    private String countNumRow(final String tbName) {
-        return "SELECT count(*) FROM "  + tbName + ";";
-    }
-
-
-
 }

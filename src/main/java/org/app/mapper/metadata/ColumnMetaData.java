@@ -15,4 +15,5 @@ public class ColumnMetaData {
     protected String columnName;
     protected Type type;
     protected Field field;
+    protected boolean autoIncrement = false;
 }
