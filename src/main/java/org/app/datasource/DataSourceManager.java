@@ -4,18 +4,13 @@ import lombok.Getter;
 import org.app.datasource.builder.DataSourceBuilderInfo;
 import org.app.datasource.builder.IDataSourceBuilder;
 import org.app.enums.DefaultDataSource;
-import org.app.query.IQuery;
-import org.app.query.impl.DefaultQueryImpl;
+import org.app.query.IQueryExecutor;
+import org.app.query.impl.DefaultQueryExecutorImpl;
 
 import javax.sql.DataSource;
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class DataSourceManager {
     private static DataSourceManager instance = null;
@@ -27,7 +22,7 @@ public class DataSourceManager {
 
     private DataSourceManager(){
         iQueries = Map.of(
-                "default",new DefaultQueryImpl()
+                "default",new DefaultQueryExecutorImpl()
         );
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -50,22 +45,22 @@ public class DataSourceManager {
         return instance;
     }
 
-    private final Map<String,IQuery> iQueries ;
+    private final Map<String, IQueryExecutor> iQueries ;
 
-    public void subscribe(String key,IQuery iQuery){
-        this.iQueries.put(key,iQuery);
+    public void subscribe(String key, IQueryExecutor iQueryExecutor){
+        this.iQueries.put(key, iQueryExecutor);
     }
 
     public void unSubscribe(String key){
         this.iQueries.remove(key);
     }
 
-    public IQuery getQuery(String key){
+    public IQueryExecutor getQuery(String key){
         return this.iQueries.get(key);
     }
 
     void changeDataSource(Connection connection){
-        iQueries.values().forEach(iQuery -> iQuery.changeDataSourceConnection(connection));
+        iQueries.values().forEach(iQueryExecutor -> iQueryExecutor.changeDataSourceConnection(connection));
     }
 
     public void setDataSource(DataSource dataSource) throws SQLException {

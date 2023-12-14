@@ -5,10 +5,9 @@ import org.app.mapper.metadata.EntityMetaData;
 import java.sql.Connection;
 import java.util.List;
 
-public interface IQuery {
+public interface IQueryExecutor {
 
     void changeDataSourceConnection(Connection connection);
-
 
     <T> List<T> select(String tableName,Class<T> clazz) throws Exception;
 

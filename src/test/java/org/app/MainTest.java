@@ -18,27 +18,9 @@ class MainTest {
         String jdbcUrl = "jdbc:postgresql://localhost:5432/orm";
         String username = "postgres";
         String password = "root";
-//
-//
 //        DataSourceManager.getInstance().setDataSource(new H2DataSourceBuilder());
 //
 //        DefaultProcessorImpl<Employee> defaultProcessor = new DefaultProcessorImpl<>(Employee.class);
-//
-//        defaultProcessor.add(new Employee(
-//                "Hoang1",
-//                java.sql.Date.valueOf("2020-01-01"),
-//                "1"
-//        ));
-//
-//        defaultProcessor.add(new Employee(
-//                "Hoang2",
-//                java.sql.Date.valueOf("2020-01-01"),
-//                "1"
-//        ));
-//
-//        for (Employee employee : defaultProcessor.findAll()) {
-//            System.out.println(employee.toString());
-//        }
 
 
         DataSourceManager.getInstance().setDataSource(

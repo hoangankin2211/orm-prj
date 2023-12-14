@@ -2,21 +2,16 @@ package org.app.processor;
 
 import lombok.Setter;
 import org.app.datasource.DataSourceManager;
-import org.app.mapper.ObjectMapperManager;
-import org.app.mapper.adapter.EntityObjectAdapter;
 import org.app.mapper.metadata.ColumnMetaData;
-import org.app.mapper.metadata.EntityMetaData;
-import org.app.query.IQuery;
-import org.app.query.impl.DefaultQueryImpl;
+import org.app.query.IQueryExecutor;
+import org.app.query.impl.DefaultQueryExecutorImpl;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class DefaultProcessorImpl<T> implements IProcessor<T> {
     @Setter
-    private  IQuery query;
+    private IQueryExecutor query;
 
     private final Class<?> clazz;
 
@@ -71,7 +66,7 @@ public class DefaultProcessorImpl<T> implements IProcessor<T> {
 
         final List<Object> params = getColumnValList(columnMetaData, obj);
 
-        params.set(0, ((DefaultQueryImpl) query).count(entityMetaData.getTableName()));
+        params.set(0, ((DefaultQueryExecutorImpl) query).count(entityMetaData.getTableName()));
 
         int result = query.insert(entityMetaData,params);
 

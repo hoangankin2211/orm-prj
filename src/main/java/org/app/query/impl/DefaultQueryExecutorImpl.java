@@ -2,10 +2,9 @@ package org.app.query.impl;
 
 import org.app.enums.OperationType;
 import org.app.mapper.ObjectMapperManager;
-import org.app.mapper.adapter.EntityObjectAdapter;
 import org.app.mapper.metadata.ColumnMetaData;
 import org.app.mapper.metadata.EntityMetaData;
-import org.app.query.IQuery;
+import org.app.query.IQueryExecutor;
 import org.app.utils.SqlUtils;
 
 import java.sql.Connection;
@@ -17,8 +16,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DefaultQueryImpl implements IQuery {
-    private  Connection connection;
+public class DefaultQueryExecutorImpl implements IQueryExecutor {
+    private Connection connection;
 
     private final SqlUtils sqlUtils = SqlUtils.getInstances();
 
@@ -62,7 +61,7 @@ public class DefaultQueryImpl implements IQuery {
         }
     }
 
-    public DefaultQueryImpl() {
+    public DefaultQueryExecutorImpl() {
     }
 
     @Override
@@ -114,7 +113,7 @@ public class DefaultQueryImpl implements IQuery {
 
     protected String createSqlStatement(OperationType handleType, EntityMetaData entityMetaData) throws SQLException {
         if (handleType == OperationType.SELECT) {
-            throw new SQLException("Error: object is null");
+            select(entityMetaData.getTableName(),entityMetaData.getClazz());
         }
 
         if (entityMetaData == null) {
