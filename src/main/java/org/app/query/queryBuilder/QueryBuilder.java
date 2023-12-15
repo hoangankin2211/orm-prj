@@ -1,13 +1,12 @@
-package org.app.query.impl;
+package org.app.query.queryBuilder;
 
 import org.app.mapper.metadata.ColumnMetaData;
+import org.app.query.queryBuilder.clause.GroupByClause;
+import org.app.query.queryBuilder.clause.HavingClause;
+import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.ISpecification;
-import org.app.query.specification.impl.SpecificationClause;
 import org.app.utils.SqlUtils;
 
-import java.security.PublicKey;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,7 +28,7 @@ public class QueryBuilder {
         StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append(columnMetaData.getColumnName());
         sqlBuilder.append(" ");
-        sqlBuilder.append(SqlUtils.getInstances().getSqlType(columnMetaData.getType()));
+        sqlBuilder.append(SqlUtils.getInstances().getSqlType(columnMetaData.getField().getType()));
         if (columnMetaData.isPrimaryKey()) {
 //            if (columnMetaData.isAutoIncrement()){
 //                try {
@@ -124,8 +123,8 @@ public class QueryBuilder {
         return this;
     }
 
-    public QueryBuilder where(SpecificationClause specificationClause) {
-        query.append(" WHERE ").append(specificationClause.toString());
+    public QueryBuilder where(ISpecification specificationClause) {
+        query.append(" WHERE ").append(specificationClause.createStatement());
         return this;
     }
 
@@ -146,73 +145,6 @@ public class QueryBuilder {
     }
 }
 
-class SelectClause {
-    private final String[] columns;
 
-    public SelectClause(String... columns) {
-        this.columns = columns;
-    }
 
-    @Override
-    public String toString() {
-        StringBuilder result = new StringBuilder();
-        for (String column : columns) {
-            result.append(column).append(", ");
-        }
-        result.delete(result.length() - 2, result.length());  // Remove the last comma and space
-        return result.toString();
-    }
-}
 
-class GroupByClause {
-    private final String[] columns;
-
-    public GroupByClause(String... columns) {
-        this.columns = columns;
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder result = new StringBuilder();
-        for (String column : columns) {
-            result.append(column)
-                    .append(", ");
-        }
-        result.delete(result.length() - 2, result.length());  // Remove the last comma and space
-        return result.toString();
-    }
-}
-
-class HavingSpecification<T> implements ISpecification<T> {
-    private final List<ISpecification<T>> specifications;
-
-    public HavingSpecification() {
-        this.specifications = new ArrayList<>();
-    }
-
-    public void addSpecification(ISpecification<T> specification) {
-        this.specifications.add(specification);
-    }
-
-    @Override
-    public boolean isSatisfiedBy(T entity) {
-        return specifications.stream().allMatch(specification -> specification.isSatisfiedBy(entity));
-    }
-}
-
-class HavingClause<T> {
-    private final HavingSpecification<T> specification;
-
-    public HavingClause() {
-        this.specification = new HavingSpecification<>();
-    }
-
-    public void addSpecification(ISpecification<T> spec) {
-        specification.addSpecification(spec);
-    }
-
-    @Override
-    public String toString() {
-        return specification.toString();
-    }
-}

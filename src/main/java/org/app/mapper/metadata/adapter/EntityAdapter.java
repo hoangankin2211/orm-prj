@@ -1,4 +1,4 @@
-package org.app.mapper.adapter;
+package org.app.mapper.metadata.adapter;
 
 import org.app.annotations.Entity;
 import org.app.mapper.metadata.ColumnMetaData;
@@ -7,10 +7,10 @@ import org.app.mapper.metadata.EntityMetaData;
 import java.lang.reflect.Field;
 import java.util.*;
 
-public class EntityObjectAdapter extends EntityMetaData {
+public class EntityAdapter extends EntityMetaData {
 
-    public EntityObjectAdapter(Class<?> clazz) {
-        super(null, null, clazz);
+    public EntityAdapter(Class<?> clazz) {
+        super(null, null,null, clazz);
         convertToEntityMetadata();
     }
 
@@ -20,7 +20,6 @@ public class EntityObjectAdapter extends EntityMetaData {
         if (clazz.isAnnotationPresent(Entity.class)){
             this.tableName =clazz.getAnnotation(Entity.class).name();
         }
-
 
         List<ColumnMetaData> columnMetaDataMap = new ArrayList<>();
 
@@ -36,9 +35,10 @@ public class EntityObjectAdapter extends EntityMetaData {
         boolean isExistPrimaryKeyAnnotation = false;
 
         for (Field f : fields) {
-            ColumnMetaData columnMetaData = new FieldAdapter(f);
+            ColumnMetaData columnMetaData = new ColumnAdapter(f);
             if (columnMetaData.isPrimaryKey()){
                 isExistPrimaryKeyAnnotation = true;
+                this.primaryKey = columnMetaData;
                 columnMetaDataMap.add(0,columnMetaData);
             }
             else {
@@ -50,10 +50,7 @@ public class EntityObjectAdapter extends EntityMetaData {
             throw new RuntimeException("Error: primary key not found");
         }
 
-
-
-        this.columnMetaDataMap = columnMetaDataMap;
-
+        this.columns = columnMetaDataMap;
     }
 
 

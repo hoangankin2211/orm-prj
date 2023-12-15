@@ -13,7 +13,6 @@ import java.lang.reflect.Type;
 public class ColumnMetaData {
     protected boolean isPrimaryKey;
     protected String columnName;
-    protected Type type;
     protected Field field;
-    protected boolean autoIncrement = false;
+    protected boolean nullable = true;
 }

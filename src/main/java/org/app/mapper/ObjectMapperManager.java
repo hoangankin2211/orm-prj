@@ -1,6 +1,6 @@
 package org.app.mapper;
 
-import org.app.mapper.adapter.EntityObjectAdapter;
+import org.app.mapper.metadata.adapter.EntityAdapter;
 import org.app.mapper.metadata.EntityMetaData;
 
 import java.util.Map;
@@ -24,7 +24,7 @@ public class ObjectMapperManager {
         EntityMetaData mapper = mappers.get(clazz);
 
         if (mapper == null) {
-            mapper = new EntityObjectAdapter(clazz);
+            mapper = new EntityAdapter(clazz);
             mappers.put(clazz, mapper);
         }
 

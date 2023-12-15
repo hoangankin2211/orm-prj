@@ -4,13 +4,14 @@ import lombok.Getter;
 import org.app.datasource.builder.DataSourceBuilderInfo;
 import org.app.datasource.builder.IDataSourceBuilder;
 import org.app.enums.DefaultDataSource;
-import org.app.query.IQueryExecutor;
-import org.app.query.impl.DefaultQueryExecutorImpl;
+import org.app.query.executor.DefaultQueryExecutorImpl;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
+import org.app.query.executor.IQueryExecutor;
 
 public class DataSourceManager {
     private static DataSourceManager instance = null;
@@ -21,9 +22,9 @@ public class DataSourceManager {
     private DataSource currDataSource = null;
 
     private DataSourceManager(){
-        iQueries = Map.of(
-                "default",new DefaultQueryExecutorImpl()
-        );
+
+
+        iQueries.put("default", new DefaultQueryExecutorImpl());
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -45,10 +46,10 @@ public class DataSourceManager {
         return instance;
     }
 
-    private final Map<String, IQueryExecutor> iQueries ;
+    private final Map<String, IQueryExecutor> iQueries = new HashMap<>();
 
     public void subscribe(String key, IQueryExecutor iQueryExecutor){
-        this.iQueries.put(key, iQueryExecutor);
+        this.iQueries.putIfAbsent(key, iQueryExecutor);
     }
 
     public void unSubscribe(String key){
@@ -66,9 +67,7 @@ public class DataSourceManager {
     public void setDataSource(DataSource dataSource) throws SQLException {
         this.currDataSource = dataSource;
         this.currConnection = dataSource.getConnection();
-
         changeDataSource(currConnection);
-
     }
 
     public void setDataSource(IDataSourceBuilder builder) throws SQLException {

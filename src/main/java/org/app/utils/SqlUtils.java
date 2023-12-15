@@ -32,7 +32,7 @@ public class SqlUtils {
             while (resultSet.next()) {
                 final T obj = clazz.getDeclaredConstructor().newInstance();
                 final EntityMetaData entityMetaData = ObjectMapperManager.getInstance().getMapper(clazz);
-                final List<ColumnMetaData> columnMetaData = entityMetaData.getColumnMetaDataMap();
+                final List<ColumnMetaData> columnMetaData = entityMetaData.getColumns();
                 for (int i = 0; i < columnMetaData.size(); i++) {
 
                     final ColumnMetaData column = columnMetaData.get(i);
