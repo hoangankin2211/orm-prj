@@ -35,9 +35,9 @@ public class ResultSetHandler<T> implements IResultSetHandler<T> {
 
         try {
             final T obj = clazz.getDeclaredConstructor().newInstance();
-            final List<ColumnMetaData> columnMetaData = entityMetaData.getColumns();
-            for (int i = 0; i < columnMetaData.size(); i++) {
-                final ColumnMetaData column = columnMetaData.get(i);
+            final Map<String,ColumnMetaData> columnMetaData = entityMetaData.getColumnsMap();
+            for (int i = 0; i < source.getMetaData().getColumnCount(); i++) {
+                final ColumnMetaData column = columnMetaData.get(source.getMetaData().getColumnName(i + 1));
                 var typeHandler = TypeHandlerFactory.getInstance().getTypeHandler(column.getField().getType());
                 Object object = typeHandler.getResult(source, i + 1);
                 column.getField().set(obj, object);

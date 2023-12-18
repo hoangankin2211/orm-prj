@@ -5,6 +5,7 @@ import org.app.mapper.metadata.EntityMetaData;
 import org.app.mapper.resultset.collection.IResultSetHandler;
 import org.app.mapper.resultset.collection.ResultSetHandler;
 import org.app.query.queryBuilder.QueryBuilder;
+import org.app.query.queryBuilder.clause.GroupByClause;
 import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.ISpecification;
 import org.app.query.specification.impl.CompareSpecification;
@@ -17,6 +18,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class DefaultQueryExecutorImpl implements IQueryExecutor {
     private Connection connection;
@@ -56,6 +59,25 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     }
 
     @Override
+    public <T> List<T> selectBy(String tableName, SelectClause selectClause, ISpecification specificationClause, GroupByClause groupByClause, Class<T> clazz) throws Exception {
+        final var _selectClause = selectClause == null ? new SelectClause("*") : selectClause;
+
+        final QueryBuilder statement = QueryBuilder.builder()
+                .select(_selectClause)
+                .from(tableName)
+                .where(specificationClause);
+
+        if (groupByClause != null) {
+            statement.groupBy(groupByClause);
+        }
+
+        System.out.println(statement);
+
+        final ResultSet resultSet = preparedStatement(statement.build()).executeQuery();
+        return sqlUtils.handleResultSet(resultSet, clazz);
+    }
+
+    @Override
     public <T> List<T> selectBy(String tableName, SelectClause selectClause, ISpecification specificationClause, Class<T> clazz) throws Exception {
         final var _selectClause = selectClause == null ? new SelectClause("*") : selectClause;
 
@@ -71,13 +93,19 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
         return sqlUtils.handleResultSet(resultSet, clazz);
     }
 
+    @Override
+    public <T> List<T> selectBy(String tableName, ISpecification specificationClause, Class<T> clazz) throws Exception {
+        final var _selectClause = new SelectClause("*");
+        return selectBy(tableName, _selectClause, specificationClause, clazz);
+    }
+
     public <T> List<T> selectByID(String tableName, EntityMetaData entityMetaData, Object id) throws Exception {
 
         final SpecificationClause specificationClause = SpecificationClause
                 .builder()
                 .addSpecification(
                         new CompareSpecification(entityMetaData.getPrimaryKey().getColumnName(), id)
-                );
+                ).build();
 
         final String statement = QueryBuilder.builder()
                 .select(new SelectClause("*"))
@@ -145,7 +173,7 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     }
 
     @Override
-    public <T> boolean delete(EntityMetaData entityMetaData, Object id) throws SQLException {
+    public boolean delete(EntityMetaData entityMetaData, Object id) throws SQLException {
         ColumnMetaData primaryKey = entityMetaData.getPrimaryKey();
         SpecificationClause searchSpecification = new SpecificationClause();
         searchSpecification.addSpecification(new CompareSpecification(primaryKey.getColumnName(), id));
@@ -170,15 +198,30 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     }
 
 
-    private <T> boolean executeSql(String statement) throws SQLException {
-        return connection.prepareStatement(statement).execute();
+    @Override
+    public boolean executeSql(String statement) throws SQLException {
+        return preparedStatement(statement).execute();
     }
 
-    private int executeSql(String statement, List<Object> params) throws SQLException {
+    @Override
+    public int executeSql(String statement, List<Object> params) throws SQLException {
         final PreparedStatement preparedStatement = preparedStatement(statement);
         for (int i = 0; i < params.size(); i++) {
             preparedStatement.setObject(i + 1, params.get(i));
         }
         return preparedStatement.executeUpdate();
+    }
+
+    @Override
+    public <T> List<T> executeSql(String statement, Function<ResultSet, List<T>> function) throws SQLException {
+        final PreparedStatement preparedStatement = preparedStatement(statement);
+        ResultSet resultSet = preparedStatement.executeQuery();
+        return function.apply(resultSet);
+    }
+
+    @Override
+    public ResultSet executeSqlResultSet(String statement) throws SQLException {
+        final PreparedStatement preparedStatement = preparedStatement(statement);
+        return preparedStatement.executeQuery();
     }
 }

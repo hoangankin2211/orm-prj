@@ -2,7 +2,6 @@ package org.app.query.queryBuilder;
 
 import org.app.mapper.metadata.ColumnMetaData;
 import org.app.query.queryBuilder.clause.GroupByClause;
-import org.app.query.queryBuilder.clause.HavingClause;
 import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.ISpecification;
 import org.app.utils.SqlUtils;
@@ -39,6 +38,7 @@ public class QueryBuilder {
 //            }
             sqlBuilder.append(" PRIMARY KEY");
         }
+        System.out.println("QueryBuilder: " + sqlBuilder.toString());
         return sqlBuilder.toString();
     }
 
@@ -133,8 +133,8 @@ public class QueryBuilder {
         return this;
     }
 
-    public QueryBuilder having(HavingClause havingClause) {
-        query.append(" HAVING ").append(havingClause);
+    public QueryBuilder having(ISpecification specificationClause) {
+        query.append(" HAVING ").append(specificationClause.createStatement());
         return this;
     }
 

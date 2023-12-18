@@ -14,7 +14,7 @@ import java.sql.Date;
 @NoArgsConstructor
 @Entity(name = "tb_employee")
 public class Employee {
-    @Id(value = "ep_id",autoGenerate = false)
+    @Id(value = "ep_id")
     public long id;
 
     @Column("ep_name")

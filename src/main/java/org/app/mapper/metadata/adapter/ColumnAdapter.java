@@ -14,14 +14,16 @@ public class ColumnAdapter extends ColumnMetaData {
 
     private void convertToColumnMetaData(Field field) {
         String columnName = field.getName();
-        Type columnType = field.getType();
         boolean isPrimaryKey = false;
 
         if (field.isAnnotationPresent(Column.class)){
-            columnName = field.getAnnotation(Column.class).value();
+            String value = field.getAnnotation(Column.class).value();
+            if (!value.isEmpty()){
+                columnName = value;
+            }
         }
 
-        if (field.isAnnotationPresent(Id.class)){
+        else if (field.isAnnotationPresent(Id.class)){
             boolean isAutoGenerate = field.getAnnotation(Id.class).autoGenerate();
 
             if (isAutoGenerate  ){
@@ -39,7 +41,7 @@ public class ColumnAdapter extends ColumnMetaData {
         }
 
         this.isPrimaryKey = isPrimaryKey;
-        this.columnName = columnName;
+        this.columnName = columnName.toLowerCase();
         this.field = field;
     }
 }

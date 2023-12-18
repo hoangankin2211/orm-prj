@@ -15,11 +15,11 @@ import java.util.List;
 public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
 
     @Setter
-    private IQueryExecutor query;
+    protected IQueryExecutor query;
 
-    private final Class<T> clazz;
+    protected final Class<T> clazz;
 
-    private EntityMetaData metaData;
+    protected EntityMetaData metaData;
 
     public DefaultProcessorImpl(Class<T> clazz) {
         try {
@@ -122,4 +122,5 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
     public boolean delete(ID id) throws Exception {
         return query.delete(metaData, id);
     }
+
 }

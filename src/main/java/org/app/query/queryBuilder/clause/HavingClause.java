@@ -1,21 +1,17 @@
 package org.app.query.queryBuilder.clause;
 
 import org.app.query.specification.ISpecification;
-import org.app.query.specification.impl.HavingSpecification;
 
 public class HavingClause {
-    private final HavingSpecification specification;
+    private final ISpecification specification;
 
-    public HavingClause() {
-        this.specification = new HavingSpecification();
-    }
 
-    public void addSpecification(ISpecification spec) {
-        specification.addSpecification(spec);
+    public HavingClause(ISpecification specification) {
+        this.specification = specification;
     }
 
     @Override
     public String toString() {
-        return specification.toString();
+        return "HAVING " + specification.toString();
     }
 }
