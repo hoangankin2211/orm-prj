@@ -1,4 +1,4 @@
-package org.app;
+package org.app.appTest.entity;
 
 import lombok.*;
 import org.app.annotations.Column;

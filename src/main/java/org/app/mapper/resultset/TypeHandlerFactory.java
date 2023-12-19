@@ -1,6 +1,8 @@
-package org.app.mapper.resultset.primitive;
+package org.app.mapper.resultset;
 
-import org.app.mapper.resultset.ITypeHandler;
+import org.app.mapper.resultset.collection.IResultSetHandler;
+import org.app.mapper.resultset.collection.ResultSetHandler;
+import org.app.mapper.resultset.primitive.*;
 
 import java.util.Date;
 import java.util.Map;
@@ -12,7 +14,7 @@ public class TypeHandlerFactory {
     private static TypeHandlerFactory instance = null;
 
     public static TypeHandlerFactory getInstance() {
-        if (instance == null){
+        if (instance == null) {
             instance = new TypeHandlerFactory();
         }
         return instance;
@@ -44,10 +46,28 @@ public class TypeHandlerFactory {
         registerTypeHandler(Date.class, new DateTypeHandler());
     }
 
-    public void registerTypeHandler(Class<?> clazz, ITypeHandler<?> typeHandler) {
-        typeHandlerCache.put(clazz, typeHandler);
+    private void registerDefaultTypeHandler(Class<?> clazz, ITypeHandler<?> typeHandler) {
+        registerTypeHandler(clazz, typeHandler);
     }
-    public ITypeHandler<?>  getTypeHandler(Class<?> clazz) {
+
+    public void registerTypeHandler(Class<?> key, ITypeHandler<?> typeHandler) {
+        typeHandlerCache.put(key, typeHandler);
+    }
+
+    public ITypeHandler<?> getTypeHandler(Class<?> clazz) {
         return typeHandlerCache.get(clazz);
+    }
+
+    public <T> IResultSetHandler<T> getResultSetTypeHandler(Class<T> clazz) {
+        ITypeHandler<?> typeHandler = typeHandlerCache.get(clazz);
+        if (typeHandler == null) {
+            var resultSetHandler = new ResultSetHandler<>(clazz);
+            registerTypeHandler(clazz,resultSetHandler);
+            return resultSetHandler;
+        }
+        if (typeHandler instanceof IResultSetHandler) {
+            return (IResultSetHandler<T>) typeHandler;
+        }
+        throw new RuntimeException("Can not found result set handler for class " + clazz.getName());
     }
 }

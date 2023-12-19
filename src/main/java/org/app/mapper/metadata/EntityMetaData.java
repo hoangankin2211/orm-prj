@@ -13,6 +13,7 @@ import java.util.Map;
 public class EntityMetaData {
     protected String tableName;
     protected ColumnMetaData primaryKey;
+    protected List<ColumnMetaData> foreignKeys;
     protected List<ColumnMetaData> columns;
     protected Map<String,ColumnMetaData> columnsMap;
     protected Class<?> clazz;

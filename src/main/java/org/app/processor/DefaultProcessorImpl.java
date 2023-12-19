@@ -2,13 +2,19 @@ package org.app.processor;
 
 import lombok.Setter;
 import org.app.datasource.DataSourceManager;
+import org.app.enums.CompareOperation;
 import org.app.mapper.metadata.ColumnMetaData;
 import org.app.mapper.metadata.EntityMetaData;
+import org.app.mapper.resultset.ITypeHandler;
+import org.app.mapper.resultset.TypeHandlerFactory;
+import org.app.mapper.resultset.collection.IResultSetHandler;
+import org.app.mapper.resultset.collection.ResultSetHandler;
 import org.app.query.executor.IQueryExecutor;
 import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.impl.CompareSpecification;
 import org.app.query.specification.impl.SpecificationClause;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,16 +27,26 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
 
     protected EntityMetaData metaData;
 
+    protected final TypeHandlerFactory typeHandlerFactory = TypeHandlerFactory.getInstance();
+    protected IResultSetHandler<T> resultSetHandler;
+
     public DefaultProcessorImpl(Class<T> clazz) {
         try {
             this.clazz = clazz;
+
             this.metaData = mapper.getMapper(clazz);
+
             this.query = DataSourceManager.getInstance().getQuery("default");
+
             query.create(metaData);
+
+            typeHandlerFactory.registerTypeHandler(clazz, new ResultSetHandler<>(clazz));
+            resultSetHandler = typeHandlerFactory.getResultSetTypeHandler(clazz);
         } catch (Exception e) {
             throw new RuntimeException("Error: create table failed", e);
         }
     }
+
 
     public DefaultProcessorImpl(Class<T> clazz, String iQueryKey) {
         try {
@@ -57,7 +73,8 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
 
     @Override
     public List<T> findAll() throws Exception {
-        return query.select(metaData.getTableName(), clazz);
+        final ResultSet resultSet = query.select(metaData.getTableName());
+        return resultSetHandler.getListResult(resultSet);
     }
 
     @Override
@@ -78,7 +95,7 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
         List<T> queryResult = query.selectBy(
                 metaData.getTableName(),
                 new SelectClause("*"),
-                new CompareSpecification(primaryKey.getColumnName(), object),
+                new CompareSpecification(primaryKey.getColumnName(), CompareOperation.EQUALS, object),
                 clazz
         );
 

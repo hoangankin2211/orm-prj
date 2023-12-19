@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.app.query.executor.IQueryExecutor;
 
 public class DataSourceManager {
@@ -21,15 +22,12 @@ public class DataSourceManager {
 
     private DataSource currDataSource = null;
 
-    private DataSourceManager(){
-
-
+    private DataSourceManager() {
         iQueries.put("default", new DefaultQueryExecutorImpl());
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                if (currConnection!=null)
-                {
+                if (currConnection != null) {
                     currConnection.close();
                     System.out.println("Shutting down application. Closing database connection.");
                 }
@@ -48,19 +46,19 @@ public class DataSourceManager {
 
     private final Map<String, IQueryExecutor> iQueries = new HashMap<>();
 
-    public void subscribe(String key, IQueryExecutor iQueryExecutor){
+    public void subscribe(String key, IQueryExecutor iQueryExecutor) {
         this.iQueries.putIfAbsent(key, iQueryExecutor);
     }
 
-    public void unSubscribe(String key){
+    public void unSubscribe(String key) {
         this.iQueries.remove(key);
     }
 
-    public IQueryExecutor getQuery(String key){
+    public IQueryExecutor getQuery(String key) {
         return this.iQueries.get(key);
     }
 
-    void changeDataSource(Connection connection){
+    void changeDataSource(Connection connection) {
         iQueries.values().forEach(iQueryExecutor -> iQueryExecutor.changeDataSourceConnection(connection));
     }
 
@@ -71,7 +69,7 @@ public class DataSourceManager {
     }
 
     public void setDataSource(IDataSourceBuilder builder) throws SQLException {
-        if (currConnection!=null){
+        if (currConnection != null) {
             currConnection.close();
             currConnection = null;
             currDataSource = null;
@@ -84,13 +82,12 @@ public class DataSourceManager {
     }
 
     public void setDataSource(DefaultDataSource dataSourceType, DataSourceBuilderInfo info) throws SQLException {
-        if (currConnection!=null){
+        if (currConnection != null) {
             currConnection.close();
             currConnection = null;
             currDataSource = null;
         }
-        switch (dataSourceType)
-        {
+        switch (dataSourceType) {
             case MSSQL:
                 this.currDataSource = DataSourceFactory
                         .getInstance()
@@ -109,7 +106,11 @@ public class DataSourceManager {
                 throw new SQLException("Unsupported DataSource Type");
         }
 
-        this.currConnection = this.currDataSource.getConnection();
+        try {
+            this.currConnection = this.currDataSource.getConnection();
+        } catch (SQLException e) {
+            throw new SQLException(e.getMessage());
+        }
 
         changeDataSource(currConnection);
     }

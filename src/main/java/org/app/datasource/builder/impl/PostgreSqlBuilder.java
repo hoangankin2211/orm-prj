@@ -19,7 +19,6 @@ public class PostgreSqlBuilder implements IDataSourceBuilder {
         this.password = password;
     }
 
-
     /*
     Testing
      */
@@ -33,10 +32,10 @@ public class PostgreSqlBuilder implements IDataSourceBuilder {
     @Override
     public DataSource buildDataSource() {
         PGSimpleDataSource dataSource = new PGSimpleDataSource();
+
         dataSource.setUrl(url);
         dataSource.setUser(username);
         dataSource.setPassword(password);
-
         return dataSource;
     }
 }

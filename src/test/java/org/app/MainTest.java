@@ -1,17 +1,16 @@
 package org.app;
 
+import org.app.appTest.entity.Employee;
 import org.app.datasource.DataSourceManager;
 import org.app.datasource.builder.DataSourceBuilderInfo;
+import org.app.enums.CompareOperation;
 import org.app.enums.DefaultDataSource;
-import org.app.mapper.resultset.ITypeHandler;
 import org.app.mapper.resultset.collection.IResultSetHandler;
-import org.app.mapper.resultset.collection.ResultSetHandler;
 import org.app.processor.DefaultProcessorImpl;
 import org.app.processor.IProcessor;
 import org.app.query.queryBuilder.QueryBuilder;
 import org.app.query.queryBuilder.clause.GroupByClause;
 import org.app.query.queryBuilder.clause.SelectClause;
-import org.app.query.specification.ISpecification;
 import org.app.query.specification.impl.CompareSpecification;
 import org.app.query.specification.impl.SpecificationClause;
 import org.junit.jupiter.api.Test;
@@ -31,10 +30,7 @@ class MainTest {
         );
 //        getEmployeeLongIProcessor();
 
-        EmployeeProcessor defaultProcessor = new EmployeeProcessor();
-        defaultProcessor.groupBy().forEach(employee -> {
-            System.out.println(employee.name);
-        });
+
     }
 
     private static IProcessor<Employee, Long> getEmployeeLongIProcessor() throws Exception {
@@ -59,34 +55,27 @@ class MainTest {
     }
 
     public static class EmployeeProcessor extends DefaultProcessorImpl<Employee, Long> {
+        private final IResultSetHandler<TestResponse> typeHandler = typeHandlerFactory.getResultSetTypeHandler(TestResponse.class);
         public EmployeeProcessor() {
             super(Employee.class);
         }
-
-        List<Employee> groupBy() throws Exception {
+        //Custom Response class
+        List<TestResponse> groupBy() throws Exception {
             String statement = QueryBuilder
                     .builder()
                     .select(new SelectClause("ep_createOn", "name_id"))
                     .from(metaData.getTableName())
-//                    .groupBy(new GroupByClause("ep_createOn", "name_id"))
-//                    .having(
-//                            SpecificationClause
-//                                    .builder()
-//                                    .addSpecification(() -> "ep_createOn = '2020-01-01'")
-//                                    .build()
-//                    )
+                    .groupBy(new GroupByClause("ep_createOn", "name_id"))
+                    .having(
+                            SpecificationClause
+                                    .builder()
+                                    .addSpecification(new CompareSpecification("ep_createOn", CompareOperation.EQUALS,"2020-01-01"))
+                                    .build()
+                    )
                     .build();
-            return query.executeSql(statement, resultSet -> {
-                try {
-                    IResultSetHandler<Employee> handler = new ResultSetHandler<>(Employee.class);
-                    return handler.getListResult(resultSet);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                return null;
-            });
+            return typeHandler.getListResult(query.executeQuery(statement));
         }
-
     }
+
 
 }

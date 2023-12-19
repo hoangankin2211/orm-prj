@@ -38,7 +38,6 @@ public class QueryBuilder {
 //            }
             sqlBuilder.append(" PRIMARY KEY");
         }
-        System.out.println("QueryBuilder: " + sqlBuilder.toString());
         return sqlBuilder.toString();
     }
 

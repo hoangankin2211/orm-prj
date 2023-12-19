@@ -68,6 +68,18 @@ public class SqlUtils {
         };
     }
 
+    public static String formatSQLParameter(Object parameter) {
+        if (parameter == null) {
+            return "NULL";
+        } else if (parameter instanceof String) {
+            // Escape single quotes and surround the string with quotes
+            return "'" + ((String) parameter).replace("'", "''") + "'";
+        } else {
+            // For other types, just convert to string
+            return parameter.toString();
+        }
+    }
+
     public String autoGenerateString() throws SQLException {
         String dataSourceName = DataSourceManager.getInstance().getCurrConnection().getMetaData().getDriverName().toLowerCase();
         if (dataSourceName.contains("postgresql")) {

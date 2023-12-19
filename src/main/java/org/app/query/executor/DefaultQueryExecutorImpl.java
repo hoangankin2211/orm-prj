@@ -1,5 +1,6 @@
 package org.app.query.executor;
 
+import org.app.enums.CompareOperation;
 import org.app.mapper.metadata.ColumnMetaData;
 import org.app.mapper.metadata.EntityMetaData;
 import org.app.mapper.resultset.collection.IResultSetHandler;
@@ -12,14 +13,12 @@ import org.app.query.specification.impl.CompareSpecification;
 import org.app.query.specification.impl.SpecificationClause;
 import org.app.utils.SqlUtils;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class DefaultQueryExecutorImpl implements IQueryExecutor {
     private Connection connection;
@@ -32,29 +31,25 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     }
 
     @Override
-    public <T> List<T> select(String tableName, Class<T> clazz) {
+    public ResultSet select(String tableName) {
         try {
             String statement = QueryBuilder.builder()
                     .selectAll()
                     .from(tableName)
                     .build();
 
-            final ResultSet resultSet = preparedStatement(statement).executeQuery();
-
-            final IResultSetHandler<T> resultSetHandler = new ResultSetHandler<>(clazz);
-
-            return resultSetHandler.getListResult(resultSet);
+            return preparedStatement(statement).executeQuery();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
-        return new ArrayList<>();
+        return null;
     }
 
     private PreparedStatement preparedStatement(String statement) throws SQLException {
-        try {
+        try{
             return connection.prepareStatement(statement);
         } catch (SQLException e) {
-            throw new SQLException(e.getMessage());
+            throw new SQLException(e);
         }
     }
 
@@ -104,7 +99,7 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
         final SpecificationClause specificationClause = SpecificationClause
                 .builder()
                 .addSpecification(
-                        new CompareSpecification(entityMetaData.getPrimaryKey().getColumnName(), id)
+                        new CompareSpecification(entityMetaData.getPrimaryKey().getColumnName(), CompareOperation.EQUALS, id)
                 ).build();
 
         final String statement = QueryBuilder.builder()
@@ -129,7 +124,7 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
                 .build();
 
         try {
-            final ResultSet resultSet = connection.prepareStatement(statement).executeQuery();
+            final ResultSet resultSet = preparedStatement(statement).executeQuery();
 
             final IResultSetHandler<T> resultSetHandler = new ResultSetHandler<>(clazz);
             return resultSetHandler.getListResult(resultSet);
@@ -139,20 +134,20 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     }
 
     @Override
-    public <T> boolean create(EntityMetaData entityMetaData) {
+    public boolean create(EntityMetaData entityMetaData) {
         try {
             final String statement = QueryBuilder.builder()
                     .create(entityMetaData.getTableName(), entityMetaData.getColumns())
                     .build();
-            return executeSql(statement);
+            return execute(statement);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public <T> int insert(EntityMetaData entityMetaData, List<Object> params) throws Exception {
-        return executeSql(
+    public int insert(EntityMetaData entityMetaData, List<Object> params) throws Exception {
+        return executeUpdate(
                 QueryBuilder.builder()
                         .insert(entityMetaData.getTableName(), entityMetaData.getColumns()).build(),
                 params
@@ -160,10 +155,10 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     }
 
     @Override
-    public <T> int update(EntityMetaData entityMetaData, List<Object> params) throws Exception {
+    public int update(EntityMetaData entityMetaData, List<Object> params) throws Exception {
         SpecificationClause searchSpecification = new SpecificationClause();
-        searchSpecification.addSpecification(new CompareSpecification(entityMetaData.getPrimaryKey().getColumnName(), params.get(0)));
-        return executeSql(
+        searchSpecification.addSpecification(new CompareSpecification(entityMetaData.getPrimaryKey().getColumnName(), CompareOperation.EQUALS, params.get(0)));
+        return executeUpdate(
                 QueryBuilder.builder()
                         .update(entityMetaData.getTableName(), entityMetaData.getColumns())
                         .where(searchSpecification)
@@ -176,8 +171,8 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     public boolean delete(EntityMetaData entityMetaData, Object id) throws SQLException {
         ColumnMetaData primaryKey = entityMetaData.getPrimaryKey();
         SpecificationClause searchSpecification = new SpecificationClause();
-        searchSpecification.addSpecification(new CompareSpecification(primaryKey.getColumnName(), id));
-        return executeSql(
+        searchSpecification.addSpecification(new CompareSpecification(primaryKey.getColumnName(), CompareOperation.EQUALS, id));
+        return execute(
                 QueryBuilder.builder()
                         .delete(entityMetaData.getTableName())
                         .where(searchSpecification)
@@ -199,12 +194,12 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
 
 
     @Override
-    public boolean executeSql(String statement) throws SQLException {
+    public boolean execute(String statement) throws SQLException {
         return preparedStatement(statement).execute();
     }
 
     @Override
-    public int executeSql(String statement, List<Object> params) throws SQLException {
+    public int executeUpdate(String statement, List<Object> params) throws SQLException {
         final PreparedStatement preparedStatement = preparedStatement(statement);
         for (int i = 0; i < params.size(); i++) {
             preparedStatement.setObject(i + 1, params.get(i));
@@ -212,15 +207,9 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
         return preparedStatement.executeUpdate();
     }
 
-    @Override
-    public <T> List<T> executeSql(String statement, Function<ResultSet, List<T>> function) throws SQLException {
-        final PreparedStatement preparedStatement = preparedStatement(statement);
-        ResultSet resultSet = preparedStatement.executeQuery();
-        return function.apply(resultSet);
-    }
 
     @Override
-    public ResultSet executeSqlResultSet(String statement) throws SQLException {
+    public ResultSet executeQuery(String statement) throws SQLException {
         final PreparedStatement preparedStatement = preparedStatement(statement);
         return preparedStatement.executeQuery();
     }
