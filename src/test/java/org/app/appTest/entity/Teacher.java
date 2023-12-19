@@ -9,15 +9,15 @@ import java.util.List;
 @Entity
 public class Teacher {
     @Id
-    private  String id;
+    private  int id;
     @ForeignKey(referencedTable = Classroom.class, referencedField = "id")
     private int classId;
     @ForeignKey(referencedTable = Course.class, referencedField = "id")
-    private  List<Course> courseList;
+    private  int courseId;
 
-    public Teacher(String id, int classId, List<Course> courseList) {
+    public Teacher(int id, int classId, int courseList) {
         this.id = id;
         this.classId = classId;
-        this.courseList = courseList;
+        this.courseId = courseList;
     }
 }

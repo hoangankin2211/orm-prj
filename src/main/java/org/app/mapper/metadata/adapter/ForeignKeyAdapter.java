@@ -2,6 +2,7 @@ package org.app.mapper.metadata.adapter;
 
 import org.app.annotations.Column;
 import org.app.annotations.ForeignKey;
+import org.app.mapper.metadata.ColumnMetaData;
 import org.app.mapper.metadata.ForeignKeyMetaData;
 
 import java.lang.reflect.Field;
@@ -18,15 +19,16 @@ public class ForeignKeyAdapter extends ForeignKeyMetaData {
             throw new RuntimeException("Error: foreign key must not be collection");
         }
         this.field = f;
-        this.columnName = field.getAnnotation(ForeignKey.class).name();
-        if (columnName.isEmpty()){
-            columnName = f.getName();
-        }
 
-
-        this.isPrimaryKey = false;
-
+        this.columnName = f.getName().toLowerCase();
+        this.isForeignKey = true;
         this.referencedField = f.getAnnotation(org.app.annotations.ForeignKey.class).referencedField();
         this.referencedTable = f.getAnnotation(org.app.annotations.ForeignKey.class).referencedTable();
+
+        ColumnMetaData columnMetaData = new ColumnAdapter(f);
+        this.nullable = columnMetaData.isNullable();
+        this.resultName = columnMetaData.getResultName();
+        this.isPrimaryKey = columnMetaData.isPrimaryKey();
+        this.columnName = columnMetaData.getColumnName();
     }
 }

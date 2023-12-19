@@ -12,7 +12,10 @@ import java.lang.reflect.Type;
 @Getter
 public class ColumnMetaData {
     protected boolean isPrimaryKey;
+    protected boolean isForeignKey;
     protected String columnName;
     protected Field field;
     protected boolean nullable = true;
+    protected String resultName;
+
 }

@@ -10,6 +10,7 @@ public class SpecificationClause implements ISpecification, SpecificationClauseB
     public static SpecificationClauseBuilder builder() {
         return new SpecificationClause();
     }
+    private SpecificationClause(){}
     @Override
     public SpecificationClauseBuilder addSpecification(ISpecification specification) {
         specifications.add(specification);

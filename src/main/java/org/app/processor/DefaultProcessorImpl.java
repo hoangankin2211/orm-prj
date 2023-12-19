@@ -11,6 +11,8 @@ import org.app.mapper.resultset.collection.IResultSetHandler;
 import org.app.mapper.resultset.collection.ResultSetHandler;
 import org.app.query.executor.IQueryExecutor;
 import org.app.query.queryBuilder.clause.SelectClause;
+import org.app.query.specification.ISpecification;
+import org.app.query.specification.SpecificationClauseBuilder;
 import org.app.query.specification.impl.CompareSpecification;
 import org.app.query.specification.impl.SpecificationClause;
 
@@ -87,17 +89,40 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
         return findBy(null, specificationClause);
     }
 
+    private ISpecification buildCompareIdClause(Object id){
+        if (id.getClass() != metaData.getPrimaryKeyClass()) {
+            throw new RuntimeException("Error: id type is not match");
+        }
+
+        Class<?> primaryClass = metaData.getPrimaryKeyClass();
+
+        final List<ColumnMetaData> primaryKeys = metaData.getPrimaryKey().values().stream().toList();
+
+        SpecificationClauseBuilder builder = SpecificationClause.builder();
+
+        primaryKeys.forEach(columnMetaData -> {
+            builder.addSpecification(new CompareSpecification(columnMetaData.getColumnName(), CompareOperation.EQUALS, primaryClass.));
+        });
+
+        return builder.build();
+    }
+
     @Override
     public T findById(Object object) throws Exception {
 
-        final ColumnMetaData primaryKey = metaData.getPrimaryKey();
+        final List<ColumnMetaData> primaryKeys = metaData.getPrimaryKey();
+
+        SpecificationClauseBuilder builder = SpecificationClause.builder();
+
+        primaryKeys.forEach(columnMetaData -> builder.addSpecification(new CompareSpecification(columnMetaData.getColumnName(), CompareOperation.EQUALS, object)));
 
         List<T> queryResult = query.selectBy(
                 metaData.getTableName(),
                 new SelectClause("*"),
-                new CompareSpecification(primaryKey.getColumnName(), CompareOperation.EQUALS, object),
+                builder.build(),
                 clazz
         );
+
 
         if (queryResult.isEmpty()) {
             return null;

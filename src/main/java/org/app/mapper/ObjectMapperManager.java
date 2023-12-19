@@ -80,7 +80,7 @@ public class ObjectMapperManager {
         }
 
         mappers.forEach((aClass, entityMetaData) -> {
-            for (ForeignKeyMetaData foreignKey : entityMetaData.getForeignKeys()) {
+            for (ForeignKeyMetaData foreignKey : entityMetaData.getForeignKeys().values().stream().toList()) {
 
                 try {
                     query.execute(QueryBuilder.builder()

@@ -8,13 +8,21 @@ import java.util.List;
 import java.util.Map;
 
 @Getter
-@AllArgsConstructor
 @NoArgsConstructor
 public class EntityMetaData {
     protected String tableName;
-    protected ColumnMetaData primaryKey;
-    protected List<ForeignKeyMetaData> foreignKeys;
+    protected Class<?> primaryKeyClass;
+    protected Map<String,ColumnMetaData> primaryKey;
+    protected Map<String,ForeignKeyMetaData> foreignKeys;
     protected List<ColumnMetaData> columns;
     protected Map<String,ColumnMetaData> columnsMap;
     protected Class<?> clazz;
+
+    protected List<ForeignKeyMetaData> getListForeignKey(){
+        return foreignKeys.values().stream().toList();
+    }
+
+    protected List<ColumnMetaData> getPrimaryKeys(){
+        return primaryKey.values().stream().toList();
+    }
 }

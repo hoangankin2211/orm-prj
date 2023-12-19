@@ -12,13 +12,12 @@ public class Classroom {
     @Id
     private  int id;
     @ForeignKey(referencedTable =Student.class, referencedField = "id")
-    private  List<Student> studentList;
+    private  int studentId;
 
 
-
-    public Classroom(String name, int id, List<Student> studentList) {
+    public Classroom(String name, int id, int studentId) {
         this.name = name;
         this.id = id;
-        this.studentList = studentList;
+        this.studentId = studentId;
     }
 }

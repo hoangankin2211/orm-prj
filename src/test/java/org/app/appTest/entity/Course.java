@@ -5,21 +5,19 @@ import org.app.annotations.ForeignKey;
 import org.app.annotations.Id;
 
 import java.util.List;
+
 @Entity
 public class Course {
-    private  String name;
+    private String name;
     @Id
-    private  int id;
-    @ForeignKey(referencedTable = Student.class, referencedField = "id")
-    private  List<Student> studentList;
-
+    private int id;
     @ForeignKey(referencedTable = Teacher.class, referencedField = "id")
-    private  Teacher teacher;
+    private int teacherId;
 
-    public Course(String name, int id, List<Student> studentList, Teacher teacher) {
+    public Course(String name, int id, int studentId, int teacherId) {
         this.name = name;
         this.id = id;
-        this.studentList = studentList;
-        this.teacher = teacher;
+        this.teacherId = teacherId;
+
     }
 }

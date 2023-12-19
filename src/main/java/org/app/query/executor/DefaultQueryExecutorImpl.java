@@ -9,6 +9,7 @@ import org.app.query.queryBuilder.QueryBuilder;
 import org.app.query.queryBuilder.clause.GroupByClause;
 import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.ISpecification;
+import org.app.query.specification.SpecificationClauseBuilder;
 import org.app.query.specification.impl.CompareSpecification;
 import org.app.query.specification.impl.SpecificationClause;
 import org.app.utils.SqlUtils;
@@ -19,6 +20,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 public class DefaultQueryExecutorImpl implements IQueryExecutor {
     private Connection connection;
@@ -46,7 +48,7 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     }
 
     private PreparedStatement preparedStatement(String statement) throws SQLException {
-        try{
+        try {
             return connection.prepareStatement(statement);
         } catch (SQLException e) {
             throw new SQLException(e);
@@ -95,17 +97,26 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
     }
 
     public <T> List<T> selectByID(String tableName, EntityMetaData entityMetaData, Object id) throws Exception {
+        final Class<?> idClass = id.getClass();
 
-        final SpecificationClause specificationClause = SpecificationClause
-                .builder()
-                .addSpecification(
-                        new CompareSpecification(entityMetaData.getPrimaryKey().getColumnName(), CompareOperation.EQUALS, id)
-                ).build();
+        final SpecificationClauseBuilder specificationClauseBuilder = SpecificationClause
+                .builder();
+
+        final Map<String,ColumnMetaData> primaryKey = entityMetaData.getPrimaryKey();
+
+        if (primaryKey.size() != 1) {
+            throw new RuntimeException("Error: Primary key must be one");
+        }
+
+        primaryKey.values().forEach(columnMetaData -> specificationClauseBuilder.addSpecification(
+                new CompareSpecification(columnMetaData.getColumnName(), CompareOperation.EQUALS, id)
+        ));
+
 
         final String statement = QueryBuilder.builder()
                 .select(new SelectClause("*"))
                 .from(tableName)
-                .where(specificationClause)
+                .where(specificationClauseBuilder.build())
                 .build();
 
         final ResultSet resultSet = preparedStatement(statement).executeQuery();
@@ -156,12 +167,17 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
 
     @Override
     public int update(EntityMetaData entityMetaData, List<Object> params) throws Exception {
-        SpecificationClause searchSpecification = new SpecificationClause();
-        searchSpecification.addSpecification(new CompareSpecification(entityMetaData.getPrimaryKey().getColumnName(), CompareOperation.EQUALS, params.get(0)));
+        SpecificationClauseBuilder searchSpecificationBuilder = SpecificationClause.builder();
+        List<ColumnMetaData> primaryKeys = entityMetaData.getPrimaryKey().values().stream().toList();
+
+        for (ColumnMetaData primaryKey : primaryKeys) {
+            searchSpecificationBuilder.addSpecification(new CompareSpecification(primaryKey.getColumnName(), CompareOperation.EQUALS, params.get(0)));
+        }
+
         return executeUpdate(
                 QueryBuilder.builder()
                         .update(entityMetaData.getTableName(), entityMetaData.getColumns())
-                        .where(searchSpecification)
+                        .where(searchSpecificationBuilder.build())
                         .build(),
                 params.subList(1, params.size())
         );
@@ -169,13 +185,17 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
 
     @Override
     public boolean delete(EntityMetaData entityMetaData, Object id) throws SQLException {
-        ColumnMetaData primaryKey = entityMetaData.getPrimaryKey();
-        SpecificationClause searchSpecification = new SpecificationClause();
-        searchSpecification.addSpecification(new CompareSpecification(primaryKey.getColumnName(), CompareOperation.EQUALS, id));
+        List<ColumnMetaData> primaryKeys = entityMetaData.getPrimaryKey().values().stream().toList();
+        SpecificationClauseBuilder searchSpecificationBuilder = SpecificationClause.builder();
+
+        for (ColumnMetaData primaryKey : primaryKeys) {
+            searchSpecificationBuilder.addSpecification(new CompareSpecification(primaryKey.getColumnName(), CompareOperation.EQUALS, id));
+        }
+
         return execute(
                 QueryBuilder.builder()
                         .delete(entityMetaData.getTableName())
-                        .where(searchSpecification)
+                        .where(searchSpecificationBuilder.build())
                         .build()
         );
     }

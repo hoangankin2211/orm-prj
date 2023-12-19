@@ -5,6 +5,7 @@ import org.app.annotations.ForeignKey;
 import org.app.annotations.Id;
 import org.app.annotations.ResultColumn;
 import org.app.mapper.metadata.ColumnMetaData;
+import org.app.mapper.metadata.ForeignKeyMetaData;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -16,24 +17,16 @@ public class ColumnAdapter extends ColumnMetaData {
 
     private void convertToColumnMetaData(Field field) {
         String columnName = field.getName();
-        boolean isPrimaryKey = false;
+        boolean isPrimaryKey = field.isAnnotationPresent(Id.class);
 
-        if (field.isAnnotationPresent(Id.class)){
-//            boolean isAutoGenerate = field.getAnnotation(Id.class).autoGenerate();
-//
-//            if (isAutoGenerate){
-//                if (field.getType() != long.class && field.getType() != Long.class && field.getType() != int.class && field.getType() != Integer.class) {
-//                    throw new RuntimeException("Error: primary key must be int or long type");
-//                }
-////                this.autoIncrement = true;
-//            }
-
-            isPrimaryKey = true;
-            String name = field.getAnnotation(Id.class).value();
-            if (!name.isEmpty()){
-                columnName = name;
-            }
-        }
+        //            boolean isAutoGenerate = field.getAnnotation(Id.class).autoGenerate();
+        //
+        //            if (isAutoGenerate){
+        //                if (field.getType() != long.class && field.getType() != Long.class && field.getType() != int.class && field.getType() != Integer.class) {
+        //                    throw new RuntimeException("Error: primary key must be int or long type");
+        //                }
+        ////                this.autoIncrement = true;
+        //            }
 
         if (field.isAnnotationPresent(Column.class)){
             String value = field.getAnnotation(Column.class).value();
@@ -42,10 +35,13 @@ public class ColumnAdapter extends ColumnMetaData {
             }
         }
 
-        else if (field.isAnnotationPresent(ResultColumn.class)){
+        if (field.isAnnotationPresent(ResultColumn.class)){
             String value = field.getAnnotation(ResultColumn.class).value();
             if (!value.isEmpty()){
-                columnName = value;
+                this.resultName = value;
+            }
+            else {
+                this.resultName = columnName;
             }
         }
 
