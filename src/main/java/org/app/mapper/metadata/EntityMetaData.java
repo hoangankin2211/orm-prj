@@ -18,11 +18,11 @@ public class EntityMetaData {
     protected Map<String,ColumnMetaData> columnsMap;
     protected Class<?> clazz;
 
-    protected List<ForeignKeyMetaData> getListForeignKey(){
+    public List<ForeignKeyMetaData> getListForeignKey(){
         return foreignKeys.values().stream().toList();
     }
 
-    protected List<ColumnMetaData> getPrimaryKeys(){
+    public List<ColumnMetaData> getPrimaryKeys(){
         return primaryKey.values().stream().toList();
     }
 }

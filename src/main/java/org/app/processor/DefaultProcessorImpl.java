@@ -16,6 +16,7 @@ import org.app.query.specification.SpecificationClauseBuilder;
 import org.app.query.specification.impl.CompareSpecification;
 import org.app.query.specification.impl.SpecificationClause;
 
+import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,7 +90,7 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
         return findBy(null, specificationClause);
     }
 
-    private ISpecification buildCompareIdClause(Object id){
+    private ISpecification buildCompareIdClause(Object id) {
         if (id.getClass() != metaData.getPrimaryKeyClass()) {
             throw new RuntimeException("Error: id type is not match");
         }
@@ -97,29 +98,38 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
         Class<?> primaryClass = metaData.getPrimaryKeyClass();
 
         final List<ColumnMetaData> primaryKeys = metaData.getPrimaryKey().values().stream().toList();
+        final List<Field> fields = List.of(primaryClass.getFields());
 
-        SpecificationClauseBuilder builder = SpecificationClause.builder();
-
-        primaryKeys.forEach(columnMetaData -> {
-            builder.addSpecification(new CompareSpecification(columnMetaData.getColumnName(), CompareOperation.EQUALS, primaryClass.));
-        });
+        SpecificationClauseBuilder builder = getSpecificationClauseBuilder(id, primaryKeys, fields);
 
         return builder.build();
     }
 
-    @Override
-    public T findById(Object object) throws Exception {
-
-        final List<ColumnMetaData> primaryKeys = metaData.getPrimaryKey();
-
+    private static SpecificationClauseBuilder getSpecificationClauseBuilder(Object id, List<ColumnMetaData> primaryKeys, List<Field> fields) {
         SpecificationClauseBuilder builder = SpecificationClause.builder();
 
-        primaryKeys.forEach(columnMetaData -> builder.addSpecification(new CompareSpecification(columnMetaData.getColumnName(), CompareOperation.EQUALS, object)));
+        for (int i = 0; i < primaryKeys.size(); i++) {
+            try {
+                builder.addSpecification(
+                        new CompareSpecification(
+                                primaryKeys.get(i).getColumnName(),
+                                CompareOperation.EQUALS,
+                                fields.get(i).get(id)
+                        )
+                );
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return builder;
+    }
 
+    @Override
+    public T findById(Object object) throws Exception {
         List<T> queryResult = query.selectBy(
                 metaData.getTableName(),
                 new SelectClause("*"),
-                builder.build(),
+                buildCompareIdClause(object),
                 clazz
         );
 
