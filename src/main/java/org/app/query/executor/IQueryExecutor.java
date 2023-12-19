@@ -27,6 +27,7 @@ public interface IQueryExecutor {
 
     boolean create(EntityMetaData entityMetaData) throws Exception;
 
+
     int insert(EntityMetaData entityMetaData, List<Object> params) throws Exception;
 
     int update(EntityMetaData entityMetaData, List<Object> params) throws Exception;

@@ -1,10 +1,10 @@
 package org.app;
 
-import org.app.appTest.entity.Employee;
 import org.app.datasource.DataSourceManager;
 import org.app.datasource.builder.DataSourceBuilderInfo;
 import org.app.enums.CompareOperation;
 import org.app.enums.DefaultDataSource;
+import org.app.mapper.ObjectMapperManager;
 import org.app.mapper.resultset.collection.IResultSetHandler;
 import org.app.processor.DefaultProcessorImpl;
 import org.app.processor.IProcessor;
@@ -29,53 +29,31 @@ class MainTest {
                 new DataSourceBuilderInfo(jdbcUrl, username, password)
         );
 //        getEmployeeLongIProcessor();
-
-
+        ObjectMapperManager.getInstance().initialize(this.getClass().getPackageName());
     }
 
-    private static IProcessor<Employee, Long> getEmployeeLongIProcessor() throws Exception {
-        IProcessor<Employee, Long> defaultProcessor = new DefaultProcessorImpl<>(Employee.class);
-
-        defaultProcessor.add(new Employee(
-                1,
-                "orm2",
-                java.sql.Date.valueOf("2020-01-01").toString(),
-                "1"
-        ));
-
-        defaultProcessor.add(new Employee(
-                2,
-                "Hoang2",
-                java.sql.Date.valueOf("2020-01-01").toString(),
-                "1"
-        ));
-
-//        defaultProcessor.delete(0L);
-        return defaultProcessor;
-    }
-
-    public static class EmployeeProcessor extends DefaultProcessorImpl<Employee, Long> {
-        private final IResultSetHandler<TestResponse> typeHandler = typeHandlerFactory.getResultSetTypeHandler(TestResponse.class);
-        public EmployeeProcessor() {
-            super(Employee.class);
-        }
-        //Custom Response class
-        List<TestResponse> groupBy() throws Exception {
-            String statement = QueryBuilder
-                    .builder()
-                    .select(new SelectClause("ep_createOn", "name_id"))
-                    .from(metaData.getTableName())
-                    .groupBy(new GroupByClause("ep_createOn", "name_id"))
-                    .having(
-                            SpecificationClause
-                                    .builder()
-                                    .addSpecification(new CompareSpecification("ep_createOn", CompareOperation.EQUALS,"2020-01-01"))
-                                    .build()
-                    )
-                    .build();
-            return typeHandler.getListResult(query.executeQuery(statement));
-        }
-    }
+//    public static class EmployeeProcessor extends DefaultProcessorImpl<Employee, Long> {
+//        private final IResultSetHandler<TestResponse> typeHandler = typeHandlerFactory.getResultSetTypeHandler(TestResponse.class);
+//        public EmployeeProcessor() {
+//            super(Employee.class);
+//        }
+//        //Custom Response class
+//        List<TestResponse> groupBy() throws Exception {
+//            String statement = QueryBuilder
+//                    .builder()
+//                    .select(new SelectClause("ep_createOn", "name_id"))
+//                    .from(metaData.getTableName())
+//                    .groupBy(new GroupByClause("ep_createOn", "name_id"))
+//                    .having(
+//                            SpecificationClause
+//                                    .builder()
+//                                    .addSpecification(new CompareSpecification("ep_createOn", CompareOperation.EQUALS,"2020-01-01"))
+//                                    .build()
+//                    )
+//                    .build();
+//            return typeHandler.getListResult(query.executeQuery(statement));
+//        }
+//    }
 
 
 }

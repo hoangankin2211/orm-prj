@@ -48,14 +48,7 @@ public class ColumnAdapter extends ColumnMetaData {
                 columnName = value;
             }
         }
-        else if (field.isAnnotationPresent(ForeignKey.class)){
-            String name = field.getAnnotation(ForeignKey.class).name();
-            if (!name.isEmpty()){
-                columnName = name;
-            }
 
-
-        }
         //Set the field accessible if it is private or protected or default
         field.setAccessible(true);
 

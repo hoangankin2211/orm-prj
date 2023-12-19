@@ -1,6 +1,9 @@
 package org.app.mapper.metadata;
 
+import lombok.Getter;
+
+@Getter
 public class ForeignKeyMetaData extends ColumnMetaData{
-    protected String referencedTable;
+    protected Class<?> referencedTable;
     protected String referencedField;
 }

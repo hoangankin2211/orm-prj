@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 //Builder
 public class QueryBuilder {
     private final StringBuilder query;
+
     private QueryBuilder() {
         this.query = new StringBuilder();
     }
@@ -20,7 +21,9 @@ public class QueryBuilder {
 
     public static QueryBuilder builder() {
         return new QueryBuilder();
-    };
+    }
+
+    ;
 
 
     private String generateCreateColumnSql(ColumnMetaData columnMetaData) {
@@ -39,6 +42,24 @@ public class QueryBuilder {
             sqlBuilder.append(" PRIMARY KEY");
         }
         return sqlBuilder.toString();
+    }
+
+    public QueryBuilder alterTable(String tableName) {
+        query.append("ALTER TABLE ")
+                .append(tableName);
+
+        return this;
+    }
+
+    public QueryBuilder addForeignKey(String columnName, String referenceTableName, String referenceColumnName) {
+        query.append(" ADD FOREIGN KEY (")
+                .append(columnName)
+                .append(") REFERENCES ")
+                .append(referenceTableName)
+                .append("(")
+                .append(referenceColumnName)
+                .append(")");
+        return this;
     }
 
 
