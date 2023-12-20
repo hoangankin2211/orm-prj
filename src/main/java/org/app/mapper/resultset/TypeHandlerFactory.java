@@ -46,15 +46,15 @@ public class TypeHandlerFactory {
         registerTypeHandler(Date.class, new DateTypeHandler());
     }
 
-    private void registerDefaultTypeHandler(Class<?> clazz, ITypeHandler<?> typeHandler) {
+    private <T> void registerDefaultTypeHandler(Class<T> clazz, ITypeHandler<T> typeHandler) {
         registerTypeHandler(clazz, typeHandler);
     }
 
-    public void registerTypeHandler(Class<?> key, ITypeHandler<?> typeHandler) {
+    public <T> void registerTypeHandler(Class<T> key, ITypeHandler<T> typeHandler) {
         typeHandlerCache.put(key, typeHandler);
     }
 
-    public ITypeHandler<?> getTypeHandler(Class<?> clazz) {
+    public  ITypeHandler<?> getTypeHandler(Class<?> clazz) {
         return typeHandlerCache.get(clazz);
     }
 
@@ -65,8 +65,13 @@ public class TypeHandlerFactory {
             registerTypeHandler(clazz,resultSetHandler);
             return resultSetHandler;
         }
+
         if (typeHandler instanceof IResultSetHandler) {
-            return (IResultSetHandler<T>) typeHandler;
+            try {
+                return (IResultSetHandler<T>) typeHandler;
+            }catch (RuntimeException e){
+                throw new RuntimeException(e);
+            }
         }
         throw new RuntimeException("Can not found result set handler for class " + clazz.getName());
     }

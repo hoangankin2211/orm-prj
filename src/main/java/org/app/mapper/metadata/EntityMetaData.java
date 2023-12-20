@@ -12,17 +12,22 @@ import java.util.Map;
 public class EntityMetaData {
     protected String tableName;
     protected Class<?> primaryKeyClass;
-    protected Map<String,ColumnMetaData> primaryKey;
+    protected Map<String,ColumnMetaData> primaryKeys;
     protected Map<String,ForeignKeyMetaData> foreignKeys;
-    protected List<ColumnMetaData> columns;
     protected Map<String,ColumnMetaData> columnsMap;
     protected Class<?> clazz;
+    protected Boolean isCompositeKey;
 
     public List<ForeignKeyMetaData> getListForeignKey(){
         return foreignKeys.values().stream().toList();
     }
 
-    public List<ColumnMetaData> getPrimaryKeys(){
-        return primaryKey.values().stream().toList();
+    public List<ColumnMetaData> getListPrimaryKeys(){
+        return primaryKeys.values().stream().toList();
     }
+
+    public List<ColumnMetaData> getListColumns(){
+        return columnsMap.values().stream().toList();
+    }
+
 }

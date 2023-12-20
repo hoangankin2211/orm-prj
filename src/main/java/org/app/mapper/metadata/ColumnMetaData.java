@@ -15,7 +15,7 @@ public class ColumnMetaData {
     protected boolean isForeignKey;
     protected String columnName;
     protected Field field;
-    protected boolean nullable = true;
     protected String resultName;
+
 
 }

@@ -5,6 +5,7 @@ import org.app.mapper.metadata.EntityMetaData;
 import org.app.query.queryBuilder.clause.GroupByClause;
 import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.ISpecification;
+import org.app.query.specification.impl.SpecificationClause;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -30,11 +31,11 @@ public interface IQueryExecutor {
 
     int insert(EntityMetaData entityMetaData, List<Object> params) throws Exception;
 
-    int update(EntityMetaData entityMetaData, List<Object> params) throws Exception;
+    int update(String tableName, ISpecification setClause, ISpecification whereClause) throws Exception;
+
+    boolean delete(String tableName, ISpecification whereClause) throws SQLException;
 
     long count(final String tbName) throws SQLException;
-
-    boolean delete(EntityMetaData entityMetaData, Object id) throws SQLException;
 
     boolean execute(String statement) throws SQLException;
 

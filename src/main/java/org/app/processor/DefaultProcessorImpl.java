@@ -2,62 +2,45 @@ package org.app.processor;
 
 import lombok.Setter;
 import org.app.datasource.DataSourceManager;
-import org.app.enums.CompareOperation;
 import org.app.mapper.metadata.ColumnMetaData;
 import org.app.mapper.metadata.EntityMetaData;
-import org.app.mapper.resultset.ITypeHandler;
 import org.app.mapper.resultset.TypeHandlerFactory;
 import org.app.mapper.resultset.collection.IResultSetHandler;
 import org.app.mapper.resultset.collection.ResultSetHandler;
 import org.app.query.executor.IQueryExecutor;
 import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.ISpecification;
-import org.app.query.specification.SpecificationClauseBuilder;
-import org.app.query.specification.impl.CompareSpecification;
+import org.app.query.specification.impl.EqualSpecification;
+import org.app.query.specification.impl.SetUpdateClause;
 import org.app.query.specification.impl.SpecificationClause;
+import org.app.utils.SqlUtils;
 
-import java.lang.reflect.Field;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.app.datasource.DataSourceManager.DEFAULT_QUERY;
 
 public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
 
     @Setter
     protected IQueryExecutor query;
-
     protected final Class<T> clazz;
-
     protected EntityMetaData metaData;
-
     protected final TypeHandlerFactory typeHandlerFactory = TypeHandlerFactory.getInstance();
     protected IResultSetHandler<T> resultSetHandler;
 
     public DefaultProcessorImpl(Class<T> clazz) {
-        try {
-            this.clazz = clazz;
-
-            this.metaData = mapper.getMapper(clazz);
-
-            this.query = DataSourceManager.getInstance().getQuery("default");
-
-            query.create(metaData);
-
-            typeHandlerFactory.registerTypeHandler(clazz, new ResultSetHandler<>(clazz));
-            resultSetHandler = typeHandlerFactory.getResultSetTypeHandler(clazz);
-        } catch (Exception e) {
-            throw new RuntimeException("Error: create table failed", e);
-        }
+        this.clazz = clazz;
+        this.metaData = mapper.getMapper(clazz);
+        this.query = DataSourceManager.getInstance().getQuery(DEFAULT_QUERY);
+        typeHandlerFactory.registerTypeHandler(clazz, new ResultSetHandler<>(clazz));
+        resultSetHandler = typeHandlerFactory.getResultSetTypeHandler(clazz);
     }
 
-
     public DefaultProcessorImpl(Class<T> clazz, String iQueryKey) {
-        try {
-            this.query = DataSourceManager.getInstance().getQuery(iQueryKey);
-            query.create(mapper.getMapper(clazz));
-        } catch (Exception e) {
-            throw new RuntimeException("Error: create table failed", e);
-        }
+        this.query = DataSourceManager.getInstance().getQuery(iQueryKey);
         this.clazz = clazz;
     }
 
@@ -75,104 +58,141 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
     }
 
     @Override
-    public List<T> findAll() throws Exception {
-        final ResultSet resultSet = query.select(metaData.getTableName());
-        return resultSetHandler.getListResult(resultSet);
-    }
-
-    @Override
-    public List<T> findBy(SelectClause selectClause, SpecificationClause specificationClause) throws Exception {
-        return query.selectBy(metaData.getTableName(), selectClause, specificationClause, clazz);
-    }
-
-    @Override
-    public List<T> findBy(SpecificationClause specificationClause) throws Exception {
-        return findBy(null, specificationClause);
-    }
-
-    private ISpecification buildCompareIdClause(Object id) {
-        if (id.getClass() != metaData.getPrimaryKeyClass()) {
-            throw new RuntimeException("Error: id type is not match");
+    public List<T> findAll() {
+        final ResultSet resultSet;
+        try {
+            resultSet = query.select(metaData.getTableName());
+            return resultSetHandler.getListResult(resultSet);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-
-        Class<?> primaryClass = metaData.getPrimaryKeyClass();
-
-        final List<ColumnMetaData> primaryKeys = metaData.getPrimaryKey().values().stream().toList();
-        final List<Field> fields = List.of(primaryClass.getFields());
-
-        SpecificationClauseBuilder builder = getSpecificationClauseBuilder(id, primaryKeys, fields);
-
-        return builder.build();
     }
 
-    private static SpecificationClauseBuilder getSpecificationClauseBuilder(Object id, List<ColumnMetaData> primaryKeys, List<Field> fields) {
-        SpecificationClauseBuilder builder = SpecificationClause.builder();
+    @Override
+    public List<T> findBy(SelectClause selectClause, ISpecification specificationClause) {
+        try {
+            return query.selectBy(metaData.getTableName(), selectClause, specificationClause, clazz);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-        for (int i = 0; i < primaryKeys.size(); i++) {
-            try {
-                builder.addSpecification(
-                        new CompareSpecification(
-                                primaryKeys.get(i).getColumnName(),
-                                CompareOperation.EQUALS,
-                                fields.get(i).get(id)
-                        )
-                );
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+    @Override
+    public List<T> findBy(ISpecification specificationClause) {
+        try {
+            return findBy(null, specificationClause);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public T findById(ID object) {
+        List<T> queryResult;
+        try {
+            queryResult = query.selectBy(
+                    metaData.getTableName(),
+                    new SelectClause("*"),
+                    SqlUtils.buildCompareIdClause(metaData, object),
+                    clazz
+            );
+            if (queryResult.isEmpty()) {
+                return null;
+            } else if (queryResult.size() > 1) {
+                throw new RuntimeException("Error: more than one result");
+            } else {
+                return queryResult.get(0);
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        return builder;
+
     }
 
     @Override
-    public T findById(Object object) throws Exception {
-        List<T> queryResult = query.selectBy(
-                metaData.getTableName(),
-                new SelectClause("*"),
-                buildCompareIdClause(object),
-                clazz
-        );
-
-
-        if (queryResult.isEmpty()) {
-            return null;
-        } else if (queryResult.size() > 1) {
-            throw new RuntimeException("Error: more than one result");
-        } else {
-            return queryResult.get(0);
-        }
-    }
-
-
-    @Override
-    public T add(T obj) throws Exception {
-        final List<ColumnMetaData> columnMetaData = metaData.getColumns();
+    public T add(T obj) {
+        final List<ColumnMetaData> columnMetaData = metaData.getListColumns();
 
         final List<Object> params = getColumnValList(columnMetaData, obj);
 
-        int result = query.insert(metaData, params);
-
-        if (result > 0) {
-            return obj;
-        } else {
-            throw new RuntimeException("Error: insert failed");
+        int result = 0;
+        try {
+            result = query.insert(metaData, params);
+            if (result > 0) {
+                return obj;
+            } else {
+                throw new RuntimeException("Error: insert failed");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public T update(T obj) throws Exception {
-        var params = getColumnValList(metaData.getColumns(), obj);
-        int result = query.update(metaData, params);
+    public T updateById(ID id, T newObj) {
+        int result;
+        try {
+            ISpecification whereClauseId = SqlUtils.buildCompareIdClause(metaData, id);
+            SetUpdateClause setClause = new SetUpdateClause(
+                    metaData.getListColumns()
+                            .stream()
+                            .filter(columnMetaData -> !columnMetaData.isPrimaryKey())
+                            .map(columnMetaData -> {
+                                try {
+                                    return new EqualSpecification(
+                                            columnMetaData.getColumnName(),
+                                            columnMetaData.getField().get(newObj)
+                                    );
+                                } catch (IllegalAccessException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }).toList()
+            );
+
+            result = query.update(
+                    metaData.getTableName(),
+                    setClause,
+                    whereClauseId
+            );
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         if (result > 0) {
-            return findById(params.get(0));
+            return findById(id);
         }
         return null;
     }
 
     @Override
-    public boolean delete(ID id) throws Exception {
-        return query.delete(metaData, id);
+    public boolean update(SetUpdateClause setClause, SpecificationClause whereClause)  {
+        int result = 0;
+        try {
+            result = query.update(metaData.getTableName(), setClause, whereClause);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return result > 0;
     }
+
+    @Override
+    public boolean delete(ID id)  {
+        try {
+            ISpecification searchSpecification = SqlUtils.buildCompareIdClause(metaData,id);
+            return query.delete(metaData.getTableName(), searchSpecification);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @Override
+    public boolean delete(ISpecification whereClause)  {
+        try {
+            return query.delete(metaData.getTableName(), whereClause);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 }

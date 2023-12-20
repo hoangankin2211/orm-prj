@@ -36,7 +36,6 @@ public class ResultSetHandler<T> implements IResultSetHandler<T> {
             final T obj = clazz.getDeclaredConstructor().newInstance();
             final Map<String,ColumnMetaData> columnMetaData = entityMetaData.getColumnsMap();
             for (int i = 0; i < source.getMetaData().getColumnCount(); i++) {
-                System.out.println(source.getMetaData().getColumnName(i + 1));
 
                 final ColumnMetaData column = columnMetaData.get(source.getMetaData().getColumnName(i + 1));
 
@@ -51,6 +50,9 @@ public class ResultSetHandler<T> implements IResultSetHandler<T> {
             return obj;
 
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
+            if (e instanceof NoSuchMethodException) {
+                throw new RuntimeException("No default constructor found for " + clazz.getName() + ". Please add a default constructor for this class.");
+            }
             throw new RuntimeException(e);
         }
     }
