@@ -2,17 +2,19 @@ package org.app.mapper.metadata.adapter;
 
 import org.app.annotations.Entity;
 import org.app.annotations.ForeignKey;
+import org.app.annotations.IdClass;
 import org.app.mapper.metadata.ColumnMetaData;
 import org.app.mapper.metadata.EntityMetaData;
 import org.app.mapper.metadata.ForeignKeyMetaData;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class EntityAdapter extends EntityMetaData {
 
     public EntityAdapter(Class<?> clazz) {
-        super(null, null, null, null, null, clazz);
+        this.clazz = clazz;
         convertToEntityMetadata();
     }
 
@@ -32,8 +34,21 @@ public class EntityAdapter extends EntityMetaData {
             isEntity = true;
         }
 
-        List<ColumnMetaData> columnMetaDataMap = new ArrayList<>();
-        List<ForeignKeyMetaData> foreignKeys = new ArrayList<>();
+        if (clazz.isAnnotationPresent(IdClass.class)) {
+            this.primaryKeyClass = clazz.getAnnotation(IdClass.class).value();
+            this.isCompositeKey = true;
+        } else {
+            this.isCompositeKey = false;
+        }
+
+        Map<String, Field> primaryFieldMap = this.isCompositeKey ?
+                Arrays.stream(this.primaryKeyClass.getDeclaredFields())
+                        .collect(Collectors.toMap(Field::getName, field -> field)
+                        )
+                : new HashMap<>();
+
+        Map<String, ColumnMetaData> primaryKeys = new HashMap<>();
+        Map<String, ForeignKeyMetaData> foreignKeys = new HashMap<>();
         Map<String, ColumnMetaData> columnsMap = new HashMap<>();
 
         Field[] fields = clazz.getDeclaredFields();
@@ -41,18 +56,30 @@ public class EntityAdapter extends EntityMetaData {
         for (Field f : fields) {
             ColumnMetaData columnMetaData;
             if (f.isAnnotationPresent(ForeignKey.class)) {
-                ForeignKeyMetaData foreignKeyMetaData = new ForeignKeyAdapter(f);
-                foreignKeys.add(foreignKeyMetaData);
-                columnMetaData = foreignKeyMetaData;
+                columnMetaData = new ForeignKeyAdapter(f);
+                foreignKeys.put(columnMetaData.getColumnName(), (ForeignKeyMetaData) columnMetaData);
             } else {
-                 columnMetaData = new ColumnAdapter(f);
-                if (columnMetaData.isPrimaryKey()) {
-                    isExistPrimaryKeyAnnotation = true;
-                    this.primaryKey = columnMetaData;
+                columnMetaData = new ColumnAdapter(f);
+            }
+
+            if (columnMetaData.isPrimaryKey()) {
+                isExistPrimaryKeyAnnotation = true;
+
+                Field primaryField = columnMetaData.getField();
+
+                // Checking if column annotated @Id field exists in primary key class
+                if (isCompositeKey && (!primaryFieldMap.containsKey(primaryField.getName())
+                        || primaryFieldMap.get(primaryField.getName()).getType() != primaryField.getType())
+                ) {
+                    throw new RuntimeException(
+                            "Error:  Primary key class " + this.primaryKeyClass.getName()
+                                    + " must have field " + primaryField.getName()
+                                    + " with type " + primaryField.getType().getName());
                 }
 
+                primaryKeys.put(columnMetaData.getColumnName(), columnMetaData);
             }
-            columnMetaDataMap.add(columnMetaData);
+
             columnsMap.put(columnMetaData.getColumnName(), columnMetaData);
         }
 
@@ -60,9 +87,9 @@ public class EntityAdapter extends EntityMetaData {
             throw new RuntimeException("Error: Table " + tableName + " must have primary key");
         }
 
-        this.columns = columnMetaDataMap;
         this.columnsMap = columnsMap;
         this.foreignKeys = foreignKeys;
+        this.primaryKeys = primaryKeys;
     }
 
 

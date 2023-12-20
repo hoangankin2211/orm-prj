@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface SpecificationClauseBuilder {
-    List<ISpecification> specifications = new ArrayList<>();
 
     SpecificationClauseBuilder addSpecification(ISpecification specification);
+    SpecificationClauseBuilder addSpecifications( List<ISpecification> specifications);
 
     SpecificationClause build();
 }

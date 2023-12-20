@@ -16,14 +16,14 @@ import org.app.query.executor.IQueryExecutor;
 
 public class DataSourceManager {
     private static DataSourceManager instance = null;
+    public static final String DEFAULT_QUERY= "default";
 
-    @Getter
     private Connection currConnection = null;
 
     private DataSource currDataSource = null;
 
     private DataSourceManager() {
-        iQueries.put("default", new DefaultQueryExecutorImpl());
+        iQueries.put(DEFAULT_QUERY, new DefaultQueryExecutorImpl());
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {

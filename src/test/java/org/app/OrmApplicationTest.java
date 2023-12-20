@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-class MainTest {
+class OrmApplicationTest {
     @Test
     void test() throws Exception {
         String jdbcUrl = "jdbc:postgresql://localhost:5432/orm";

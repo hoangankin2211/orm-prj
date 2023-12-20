@@ -1,9 +1,12 @@
 package org.app.query.queryBuilder;
 
 import org.app.mapper.metadata.ColumnMetaData;
+import org.app.mapper.metadata.EntityMetaData;
 import org.app.query.queryBuilder.clause.GroupByClause;
 import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.ISpecification;
+import org.app.query.specification.impl.EqualSpecification;
+import org.app.query.specification.impl.SpecificationClause;
 import org.app.utils.SqlUtils;
 
 import java.util.Collections;
@@ -31,16 +34,16 @@ public class QueryBuilder {
         sqlBuilder.append(columnMetaData.getColumnName());
         sqlBuilder.append(" ");
         sqlBuilder.append(SqlUtils.getInstances().getSqlType(columnMetaData.getField().getType()));
-        if (columnMetaData.isPrimaryKey()) {
-//            if (columnMetaData.isAutoIncrement()){
-//                try {
-//                    sqlBuilder.append(SqlUtils.getInstances().autoGenerateString());
-//                } catch (SQLException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-            sqlBuilder.append(" PRIMARY KEY");
-        }
+//        if (columnMetaData.isPrimaryKey()) {
+////            if (columnMetaData.isAutoIncrement()){
+////                try {
+////                    sqlBuilder.append(SqlUtils.getInstances().autoGenerateString());
+////                } catch (SQLException e) {
+////                    throw new RuntimeException(e);
+////                }
+////            }
+//            sqlBuilder.append(" PRIMARY KEY");
+//        }
         return sqlBuilder.toString();
     }
 
@@ -63,19 +66,24 @@ public class QueryBuilder {
     }
 
 
-    public QueryBuilder create(String tableName, List<ColumnMetaData> columnMetaData) {
-        if (columnMetaData.isEmpty()) {
-            throw new RuntimeException("Error: columnMetaData is empty");
-        }
-
+    public QueryBuilder create(EntityMetaData entityMetaData) {
+        String tableName = entityMetaData.getTableName();
+        List<ColumnMetaData> columnMetaData = entityMetaData.getListColumns();
+//        , "(", ")"
         query.append("CREATE TABLE IF NOT EXISTS ")
                 .append(tableName)
-                .append(
-                        columnMetaData
-                                .stream()
-                                .map(this::generateCreateColumnSql)
-                                .collect(Collectors.joining(",", "(", ")"))
-                );
+                .append("(")
+                .append(columnMetaData
+                        .stream()
+                        .map(this::generateCreateColumnSql)
+                        .collect(Collectors.joining(",")))
+                .append(",")
+                .append(entityMetaData.getListPrimaryKeys()
+                        .stream()
+                        .map(ColumnMetaData::getColumnName)
+                        .collect(Collectors.joining(",", "PRIMARY KEY (", ")")))
+                .append(")")
+                .append(";");
 
         return this;
     }
@@ -118,6 +126,14 @@ public class QueryBuilder {
                                 .map(ColumnMetaData::getColumnName)
                                 .collect(Collectors.joining("=?,", "", "=?"))
                 );
+        return this;
+    }
+
+    public QueryBuilder update(String tableName, ISpecification setClause) {
+        query.append("UPDATE ")
+                .append(tableName)
+                .append(" SET ")
+                .append(setClause.createStatement());
         return this;
     }
 

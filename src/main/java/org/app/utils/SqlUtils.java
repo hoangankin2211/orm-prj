@@ -1,9 +1,15 @@
 package org.app.utils;
 
 import org.app.datasource.DataSourceManager;
+import org.app.enums.CompareOperation;
 import org.app.mapper.ObjectMapperManager;
 import org.app.mapper.metadata.ColumnMetaData;
 import org.app.mapper.metadata.EntityMetaData;
+import org.app.query.specification.ISpecification;
+import org.app.query.specification.SpecificationClauseBuilder;
+import org.app.query.specification.impl.CompareSpecification;
+import org.app.query.specification.impl.EqualSpecification;
+import org.app.query.specification.impl.SpecificationClause;
 
 import java.lang.reflect.Type;
 import java.sql.ResultSet;
@@ -11,6 +17,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class SqlUtils {
 
@@ -32,11 +39,17 @@ public class SqlUtils {
             while (resultSet.next()) {
                 final T obj = clazz.getDeclaredConstructor().newInstance();
                 final EntityMetaData entityMetaData = ObjectMapperManager.getInstance().getMapper(clazz);
-                final List<ColumnMetaData> columnMetaData = entityMetaData.getColumns();
-                for (int i = 0; i < columnMetaData.size(); i++) {
+                final Map<String,ColumnMetaData> columnMetaData = entityMetaData.getColumnsMap();
 
-                    final ColumnMetaData column = columnMetaData.get(i);
-                    var object = resultSet.getObject(i + 1);
+                List<String> resultColumnName = new ArrayList<>();
+
+                for (int i =1;i<=resultSet.getMetaData().getColumnCount();i++){
+                    resultColumnName.add(resultSet.getMetaData().getColumnName(i));
+                }
+
+                for (String s : resultColumnName) {
+                    final ColumnMetaData column = columnMetaData.get(s);
+                    var object = resultSet.getObject(s);
                     column.getField().set(obj, object);
 
                 }
@@ -80,7 +93,7 @@ public class SqlUtils {
         }
     }
 
-    public String autoGenerateString() throws SQLException {
+   /* public String autoGenerateString() throws SQLException {
         String dataSourceName = DataSourceManager.getInstance().getCurrConnection().getMetaData().getDriverName().toLowerCase();
         if (dataSourceName.contains("postgresql")) {
             return " SERIAL";
@@ -97,7 +110,7 @@ public class SqlUtils {
         } else {
             throw new SQLException("Error: unsupported auto generate handle for this database type");
         }
-    }
+    }*/
 
     public String getSqlType(Type javaType) {
         if (javaType == int.class || javaType == Integer.class) {
@@ -121,4 +134,28 @@ public class SqlUtils {
         }
         return "varchar";
     }
+
+    public static ISpecification buildCompareIdClause(EntityMetaData metaData, Object id) {
+        if (metaData.getPrimaryKeyClass() != null && id.getClass() != metaData.getPrimaryKeyClass()) {
+            throw new RuntimeException("Error: id type is not match");
+        }
+        final List<ColumnMetaData> primaryKeys = metaData.getListPrimaryKeys();
+
+        SpecificationClauseBuilder builder = SpecificationClause.allOf();
+
+        if (metaData.getPrimaryKeyClass()!= null) {
+            for (ColumnMetaData primaryKey : primaryKeys) {
+                try {
+                    builder.addSpecification(new EqualSpecification(primaryKey.getColumnName(), primaryKey.getField().get(id)));
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        else {
+            builder.addSpecification(new EqualSpecification(primaryKeys.get(0).getColumnName(), id));
+        }
+        return builder.build();
+    }
+
 }

@@ -8,13 +8,26 @@ import java.util.List;
 import java.util.Map;
 
 @Getter
-@AllArgsConstructor
 @NoArgsConstructor
 public class EntityMetaData {
     protected String tableName;
-    protected ColumnMetaData primaryKey;
-    protected List<ForeignKeyMetaData> foreignKeys;
-    protected List<ColumnMetaData> columns;
+    protected Class<?> primaryKeyClass;
+    protected Map<String,ColumnMetaData> primaryKeys;
+    protected Map<String,ForeignKeyMetaData> foreignKeys;
     protected Map<String,ColumnMetaData> columnsMap;
     protected Class<?> clazz;
+    protected Boolean isCompositeKey;
+
+    public List<ForeignKeyMetaData> getListForeignKey(){
+        return foreignKeys.values().stream().toList();
+    }
+
+    public List<ColumnMetaData> getListPrimaryKeys(){
+        return primaryKeys.values().stream().toList();
+    }
+
+    public List<ColumnMetaData> getListColumns(){
+        return columnsMap.values().stream().toList();
+    }
+
 }
