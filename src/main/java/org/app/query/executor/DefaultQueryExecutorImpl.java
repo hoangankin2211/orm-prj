@@ -185,8 +185,13 @@ public class DefaultQueryExecutorImpl implements IQueryExecutor {
 
 
     @Override
-    public ResultSet executeQuery(String statement) throws SQLException {
-        final PreparedStatement preparedStatement = preparedStatement(statement);
-        return preparedStatement.executeQuery();
+    public ResultSet executeQuery(String statement) {
+        final PreparedStatement preparedStatement;
+        try {
+            preparedStatement = preparedStatement(statement);
+            return preparedStatement.executeQuery();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

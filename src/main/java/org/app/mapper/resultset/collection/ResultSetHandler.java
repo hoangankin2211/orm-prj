@@ -12,19 +12,23 @@ import java.util.*;
 
 public class ResultSetHandler<T> implements IResultSetHandler<T> {
     private final Class<T> clazz;
+
     public ResultSetHandler(Class<T> clazz) {
         this.clazz = clazz;
     }
+
     @Override
-    public  List<T> getListResult( ResultSet resultSet) throws SQLException {
+    public List<T> getListResult(ResultSet resultSet) {
         List<T> result = new ArrayList<>();
-        try {
-            while (resultSet.next()) {
-                final T obj = getResult(resultSet, -1);
-                result.add(obj);
+        while (true) {
+            final T obj;
+            try {
+                if (!resultSet.next()) break;
+                obj = getResult(resultSet, -1);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-        } catch (Exception e) {
-            throw new SQLException(e);
+            result.add(obj);
         }
         return result;
     }
@@ -34,12 +38,12 @@ public class ResultSetHandler<T> implements IResultSetHandler<T> {
         try {
             EntityMetaData entityMetaData = ObjectMapperManager.getInstance().getMapper(clazz);
             final T obj = clazz.getDeclaredConstructor().newInstance();
-            final Map<String,ColumnMetaData> columnMetaData = entityMetaData.getColumnsMap();
+            final Map<String, ColumnMetaData> columnMetaData = entityMetaData.getColumnsMap();
             for (int i = 0; i < source.getMetaData().getColumnCount(); i++) {
 
                 final ColumnMetaData column = columnMetaData.get(source.getMetaData().getColumnName(i + 1));
 
-                if (column == null){
+                if (column == null) {
                     throw new RuntimeException("Can not found column name " + source.getMetaData().getColumnName(i + 1));
                 }
 
@@ -49,7 +53,8 @@ public class ResultSetHandler<T> implements IResultSetHandler<T> {
             }
             return obj;
 
-        } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException |
+                 NoSuchMethodException e) {
             if (e instanceof NoSuchMethodException) {
                 throw new RuntimeException("No default constructor found for " + clazz.getName() + ". Please add a default constructor for this class.");
             }

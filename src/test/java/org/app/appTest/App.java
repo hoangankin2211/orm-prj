@@ -9,7 +9,7 @@ import org.app.enums.DefaultDataSource;
 import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.impl.CompareSpecification;
 import org.app.query.specification.impl.EqualSpecification;
-import org.app.query.specification.impl.SetUpdateClause;
+import org.app.query.specification.impl.SetClause;
 import org.app.query.specification.impl.SpecificationClause;
 
 //Demo app student management
@@ -22,7 +22,7 @@ public class App {
         String password = "root";
 
         OrmApplication.run(App.class, DefaultDataSource.POSTGRESQL, new DataSourceBuilderInfo(jdbcUrl, username, password));
-
+//        testAddStudent();
         testSelectStudent3();
     }
 
@@ -48,7 +48,7 @@ public class App {
     }
 
     static void displayStudent(Student student) {
-        if (student == null){
+        if (student == null) {
             System.out.println("Student not found");
             return;
         }
@@ -73,7 +73,7 @@ public class App {
     }
 
     static void testUpdateStudent2() {
-        studentProcessor.update(new SetUpdateClause(
+        studentProcessor.update(new SetClause(
                         new EqualSpecification("name", "Hoang Truong")
                 ), SpecificationClause.allOf(
                         new EqualSpecification("name", "Nguyen Van A")
@@ -116,6 +116,9 @@ public class App {
     }
 
     static void testSelectStudent3() {
-      displayStudent(studentProcessor.findById(1));
+        studentProcessor.findByNameGroupByName().forEach(testResponse -> {
+            System.out.println(testResponse.getName());
+        });
     }
+
 }

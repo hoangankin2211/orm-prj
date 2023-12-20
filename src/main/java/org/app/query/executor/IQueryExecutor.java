@@ -41,5 +41,5 @@ public interface IQueryExecutor {
 
     int executeUpdate(String statement, List<Object> params) throws SQLException;
 
-    ResultSet executeQuery(String statement) throws SQLException;
+    ResultSet executeQuery(String statement) ;
 }

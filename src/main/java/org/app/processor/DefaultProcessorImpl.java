@@ -11,8 +11,7 @@ import org.app.query.executor.IQueryExecutor;
 import org.app.query.queryBuilder.clause.SelectClause;
 import org.app.query.specification.ISpecification;
 import org.app.query.specification.impl.EqualSpecification;
-import org.app.query.specification.impl.SetUpdateClause;
-import org.app.query.specification.impl.SpecificationClause;
+import org.app.query.specification.impl.SetClause;
 import org.app.utils.SqlUtils;
 
 import java.sql.ResultSet;
@@ -129,11 +128,11 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
     }
 
     @Override
-    public T updateById(ID id, T newObj) {
+    public void updateById(ID id, T newObj) {
         int result;
         try {
             ISpecification whereClauseId = SqlUtils.buildCompareIdClause(metaData, id);
-            SetUpdateClause setClause = new SetUpdateClause(
+            SetClause setClause = new SetClause(
                     metaData.getListColumns()
                             .stream()
                             .filter(columnMetaData -> !columnMetaData.isPrimaryKey())
@@ -158,22 +157,16 @@ public class DefaultProcessorImpl<T, ID> implements IProcessor<T, ID> {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        if (result > 0) {
-            return findById(id);
-        }
-        return null;
     }
 
     @Override
-    public boolean update(SetUpdateClause setClause, SpecificationClause whereClause)  {
-        int result = 0;
+    public void update(SetClause setClause, ISpecification whereClause)  {
+        int result;
         try {
             result = query.update(metaData.getTableName(), setClause, whereClause);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return result > 0;
     }
 
     @Override

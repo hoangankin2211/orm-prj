@@ -1,19 +1,18 @@
 package org.app.query.specification.impl;
 
 import org.app.query.specification.ISpecification;
-import org.app.query.specification.SpecificationClauseBuilder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class SetUpdateClause implements ISpecification {
+public class SetClause implements ISpecification {
     private final List<EqualSpecification>   _specifications;
 
-    public SetUpdateClause(EqualSpecification... specifications) {
+    public SetClause(EqualSpecification... specifications) {
         _specifications = Arrays.stream(specifications).toList();
     }
-    public SetUpdateClause(List<EqualSpecification>  specifications) {
+    public SetClause(List<EqualSpecification>  specifications) {
         this._specifications = specifications;
     }
 
